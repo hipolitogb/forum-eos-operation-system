@@ -41,7 +41,7 @@
       <button onclick="document.getElementById('add-form').classList.toggle('hidden')" class="w-full py-3 border border-dashed border-brand-primary/40 rounded-lg text-brand-primary text-sm font-semibold hover:bg-brand-primary/10 transition">+ Add topic</button>
       <form id="add-form" class="hidden mt-3 bg-dark-800 border border-dark-700 rounded-lg p-4 space-y-3" hx-post="/parking" hx-target="#parking-section" hx-swap="innerHTML" hx-on::after-request="this.reset(); this.classList.add('hidden'); initSortable();">
         <div class="flex gap-2">
-          <select name="person_name" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40 flex-shrink-0">
+          <select id="parking-person-select" name="person_name" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40 flex-shrink-0">
             {% for name in member_names %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
           </select>
           <input name="title" placeholder="Topic title" required class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm flex-1">
