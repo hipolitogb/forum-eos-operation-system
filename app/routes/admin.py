@@ -15,9 +15,17 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Member, ParkingItem
+from app.models import (
+    Member,
+    ParkingItem,
+    AgendaItem,
+    ConstitutionPillar,
+    ConstitutionRule,
+    ReflectionArea,
+)
 from app.branding import (
     branding_context,
+    forum_content_context,
     get_or_create_settings,
     DISPLAY_FONTS,
     BODY_FONTS,
@@ -90,6 +98,7 @@ def admin_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("admin.html", {
         "request": request,
         **branding_context(db),
+        **forum_content_context(db),
         "backups": backups,
         "members": members,
         "member_count": len(members),
@@ -569,3 +578,262 @@ def admin_member_delete(member_id: int, db: Session = Depends(get_db)):
         db.delete(member)
         db.commit()
     return Response(status_code=200, content="")
+
+
+# ---------- Agenda items ----------
+
+def _agenda_row(request, item):
+    return templates.TemplateResponse("partials/admin_agenda_row.html", {"request": request, "item": item})
+
+
+def _agenda_rows(request, db):
+    items = db.query(AgendaItem).order_by(AgendaItem.display_order, AgendaItem.id).all()
+    return templates.TemplateResponse("partials/admin_agenda_rows.html", {"request": request, "items": items})
+
+
+@router.post("/agenda")
+def admin_agenda_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    time: str = Form(""),
+    title: str = Form(""),
+    duration: str = Form(""),
+    description: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = AgendaItem(
+        time=time.strip(),
+        title=title.strip(),
+        duration=duration.strip(),
+        description=description.strip(),
+        display_order=display_order,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _agenda_rows(request, db)
+
+
+@router.post("/agenda/{item_id}")
+def admin_agenda_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    time: str = Form(""),
+    title: str = Form(""),
+    duration: str = Form(""),
+    description: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = db.query(AgendaItem).get(item_id)
+    if not item:
+        return Response(status_code=404)
+    item.time = time.strip()
+    item.title = title.strip()
+    item.duration = duration.strip()
+    item.description = description.strip()
+    item.display_order = display_order
+    db.commit()
+    db.refresh(item)
+    return _agenda_row(request, item)
+
+
+@router.delete("/agenda/{item_id}")
+def admin_agenda_delete(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(AgendaItem).get(item_id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return Response(content="")
+
+
+# ---------- Constitution pillars ----------
+
+def _pillar_row(request, item):
+    return templates.TemplateResponse("partials/admin_pillar_row.html", {"request": request, "item": item})
+
+
+def _pillar_rows(request, db):
+    items = db.query(ConstitutionPillar).order_by(ConstitutionPillar.display_order, ConstitutionPillar.id).all()
+    return templates.TemplateResponse("partials/admin_pillar_rows.html", {"request": request, "items": items})
+
+
+@router.post("/pillars")
+def admin_pillar_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    name: str = Form(""),
+    description: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = ConstitutionPillar(name=name.strip(), description=description.strip(), display_order=display_order)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _pillar_rows(request, db)
+
+
+@router.post("/pillars/{item_id}")
+def admin_pillar_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    name: str = Form(""),
+    description: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = db.query(ConstitutionPillar).get(item_id)
+    if not item:
+        return Response(status_code=404)
+    item.name = name.strip()
+    item.description = description.strip()
+    item.display_order = display_order
+    db.commit()
+    db.refresh(item)
+    return _pillar_row(request, item)
+
+
+@router.delete("/pillars/{item_id}")
+def admin_pillar_delete(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(ConstitutionPillar).get(item_id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return Response(content="")
+
+
+# ---------- Constitution rules ----------
+
+def _rule_row(request, item):
+    return templates.TemplateResponse("partials/admin_rule_row.html", {"request": request, "item": item})
+
+
+def _rule_rows(request, db):
+    items = db.query(ConstitutionRule).order_by(ConstitutionRule.display_order, ConstitutionRule.id).all()
+    return templates.TemplateResponse("partials/admin_rule_rows.html", {"request": request, "items": items})
+
+
+@router.post("/rules")
+def admin_rule_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    topic: str = Form(""),
+    rule: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = ConstitutionRule(topic=topic.strip(), rule=rule.strip(), display_order=display_order)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _rule_rows(request, db)
+
+
+@router.post("/rules/{item_id}")
+def admin_rule_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    topic: str = Form(""),
+    rule: str = Form(""),
+    display_order: int = Form(0),
+):
+    item = db.query(ConstitutionRule).get(item_id)
+    if not item:
+        return Response(status_code=404)
+    item.topic = topic.strip()
+    item.rule = rule.strip()
+    item.display_order = display_order
+    db.commit()
+    db.refresh(item)
+    return _rule_row(request, item)
+
+
+@router.delete("/rules/{item_id}")
+def admin_rule_delete(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(ConstitutionRule).get(item_id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return Response(content="")
+
+
+# ---------- Reflection areas ----------
+
+def _area_row(request, item):
+    return templates.TemplateResponse("partials/admin_area_row.html", {"request": request, "item": item})
+
+
+def _area_rows(request, db):
+    items = db.query(ReflectionArea).order_by(ReflectionArea.display_order, ReflectionArea.id).all()
+    return templates.TemplateResponse("partials/admin_area_rows.html", {"request": request, "items": items})
+
+
+@router.post("/areas")
+def admin_area_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    icon: str = Form(""),
+    label: str = Form(""),
+    color_class: str = Form("text-brand-primary"),
+    display_order: int = Form(0),
+):
+    item = ReflectionArea(
+        icon=icon.strip(),
+        label=label.strip(),
+        color_class=(color_class.strip() or "text-brand-primary"),
+        display_order=display_order,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _area_rows(request, db)
+
+
+@router.post("/areas/{item_id}")
+def admin_area_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    icon: str = Form(""),
+    label: str = Form(""),
+    color_class: str = Form("text-brand-primary"),
+    display_order: int = Form(0),
+):
+    item = db.query(ReflectionArea).get(item_id)
+    if not item:
+        return Response(status_code=404)
+    item.icon = icon.strip()
+    item.label = label.strip()
+    item.color_class = (color_class.strip() or "text-brand-primary")
+    item.display_order = display_order
+    db.commit()
+    db.refresh(item)
+    return _area_row(request, item)
+
+
+@router.delete("/areas/{item_id}")
+def admin_area_delete(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(ReflectionArea).get(item_id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return Response(content="")
+
+
+# ---------- Reflections intro/footer text ----------
+
+@router.post("/reflections/text")
+def admin_reflections_text(
+    request: Request,
+    db: Session = Depends(get_db),
+    reflections_intro: str = Form(""),
+    reflections_footer: str = Form(""),
+):
+    settings = get_or_create_settings(db)
+    settings.reflections_intro = reflections_intro.strip()
+    settings.reflections_footer = reflections_footer.strip()
+    db.commit()
+    return Response(
+        content="<span class='text-emerald-400'>✓ saved</span>",
+        media_type="text/html",
+    )

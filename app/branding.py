@@ -1,6 +1,12 @@
 """Branding helpers: load settings, derive color shades, build font URLs."""
 from sqlalchemy.orm import Session
-from app.models import ForumSettings
+from app.models import (
+    ForumSettings,
+    AgendaItem,
+    ConstitutionPillar,
+    ConstitutionRule,
+    ReflectionArea,
+)
 
 
 # Curated font lists exposed in the admin dropdowns. The key is the human
@@ -96,4 +102,15 @@ def branding_context(db: Session) -> dict:
         },
         "display_fonts": list(DISPLAY_FONTS.keys()),
         "body_fonts": list(BODY_FONTS.keys()),
+    }
+
+
+def forum_content_context(db: Session) -> dict:
+    """Dynamic content rendered on the home page: agenda, constitution,
+    5% reflections. All editable from /admin."""
+    return {
+        "agenda": db.query(AgendaItem).order_by(AgendaItem.display_order, AgendaItem.id).all(),
+        "pillars": db.query(ConstitutionPillar).order_by(ConstitutionPillar.display_order, ConstitutionPillar.id).all(),
+        "rules": db.query(ConstitutionRule).order_by(ConstitutionRule.display_order, ConstitutionRule.id).all(),
+        "reflection_areas": db.query(ReflectionArea).order_by(ReflectionArea.display_order, ReflectionArea.id).all(),
     }

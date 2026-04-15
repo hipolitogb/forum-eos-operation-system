@@ -1,0 +1,11 @@
+<tr id="admin-agenda-{{ item.id }}" class="border-b border-dark-700/60 align-top">
+  <td class="py-2 px-2"><input type="text" name="time" value="{{ item.time }}" placeholder="0:00" class="w-16 bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm font-mono"></td>
+  <td class="py-2 px-2"><input type="text" name="title" value="{{ item.title }}" placeholder="Title" class="w-full bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm"></td>
+  <td class="py-2 px-2"><input type="text" name="duration" value="{{ item.duration }}" placeholder="15 min" class="w-20 bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm"></td>
+  <td class="py-2 px-2"><input type="text" name="description" value="{{ item.description }}" placeholder="(optional)" class="w-full bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm"></td>
+  <td class="py-2 px-2"><input type="number" name="display_order" value="{{ item.display_order }}" class="w-14 bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm font-mono"></td>
+  <td class="py-2 px-2 text-right space-x-2 whitespace-nowrap">
+    <button type="button" hx-post="/admin/agenda/{{ item.id }}" hx-target="#admin-agenda-{{ item.id }}" hx-swap="outerHTML" hx-include="closest tr" class="text-xs font-semibold text-brand-primary hover:text-brand-primary-deep">Save</button>
+    <button type="button" hx-delete="/admin/agenda/{{ item.id }}" hx-target="#admin-agenda-{{ item.id }}" hx-swap="outerHTML swap:0.15s" hx-confirm="Delete row?" class="text-xs text-gray-500 hover:text-red-400">Delete</button>
+  </td>
+</tr>
