@@ -18,7 +18,27 @@ Lightweight operations dashboard for EO Forums (and any small peer-advisory grou
 - htmx + Tailwind (CDN) + SortableJS
 - Docker Compose
 
-## Quick start (local dev)
+## Quick install (one command)
+
+On any server with Docker + Docker Compose:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hipolitogb/forum-eos-operation-system/main/install.sh | bash
+```
+
+This pulls the pre-built image from GHCR, generates strong random passwords for you, and starts the stack. When it finishes, it prints your dashboard URL and admin credentials.
+
+Tunables (set before running):
+
+```bash
+INSTALL_DIR=/srv/forum APP_PORT=8080 bash install.sh
+```
+
+After install, put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` to serve over HTTPS.
+
+## Local dev (from source)
+
+If you want to hack on the code:
 
 ```bash
 git clone https://github.com/hipolitogb/forum-eos-operation-system.git
@@ -30,18 +50,11 @@ docker compose up -d --build
 
 Open `http://localhost:8000` for the dashboard, `http://localhost:8000/admin` for the admin (HTTP Basic Auth — any username + `ADMIN_PASSWORD` from `.env`).
 
-## Deploy to a VPS
+## Where data lives
 
-The app is a self-contained Docker stack. Any VPS with Docker installed can host it:
-
-1. Copy the repo to the server (e.g. `git clone` into `/home/apps/forum/`).
-2. Create `.env` with production values. **Set a strong `ADMIN_PASSWORD` and `POSTGRES_PASSWORD`.**
-3. `docker compose up -d --build`.
-4. Put a reverse proxy (Caddy / nginx / Cloudflare Tunnel) in front of port `APP_PORT` to expose it on HTTPS.
-
-The app writes:
 - `backups/` — CSV snapshots (every manual backup + every pre-restore auto-backup).
-- Postgres data — in the `forum_db_data` named volume (survives `docker compose down`; persists until you `docker volume rm`).
+- `uploads/` — user-uploaded logos (only in the installed stack; in dev they live in `app/static/uploads/`).
+- Postgres data — in the named volume `forum_db_data` (survives `docker compose down`; persists until you `docker volume rm`).
 
 ## Environment variables
 
@@ -56,10 +69,11 @@ See [`.env.example`](.env.example). Required for production:
 
 ## Roadmap
 
-- [ ] Editable branding from `/admin` (forum name, tagline, logo, fonts, colors)
-- [ ] `install.sh` one-liner bootstrap
-- [ ] Published Docker image on GHCR
+- [x] Editable branding from `/admin` (forum name, tagline, logo, fonts, colors)
+- [x] `install.sh` one-liner bootstrap
+- [x] Published Docker image on GHCR (multi-arch, amd64 + arm64)
 - [ ] i18n (currently English only)
+- [ ] Per-member onboarding questionnaire
 
 ## License
 
