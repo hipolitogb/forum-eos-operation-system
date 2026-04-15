@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Member, ParkingItem
+from app.branding import branding_context
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -41,6 +42,7 @@ def index(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse("index.html", {
         "request": request,
+        **branding_context(db),
         "members": members,
         "parking_groups": groups,
         "tag_labels": tag_labels,

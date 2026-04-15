@@ -4,12 +4,16 @@
 
   <div class="mb-8 pb-6 border-b border-dark-700">
     <div class="flex items-center gap-4">
+      {% if settings.logo_path %}
+      <img src="/static/{{ settings.logo_path }}" alt="{{ settings.forum_name }}" class="w-12 h-12 md:w-14 md:h-14 flex-shrink-0 rounded-full object-cover">
+      {% else %}
       <div class="w-12 h-12 md:w-14 md:h-14 flex-shrink-0 rounded-full bg-brand-primary/15 border border-brand-primary/30 flex items-center justify-center">
         <span class="font-display text-xl md:text-2xl text-brand-primary">A</span>
       </div>
+      {% endif %}
       <div class="flex-1 min-w-0">
         <h1 class="font-display text-2xl md:text-3xl text-brand-primary leading-none tracking-wide">ADMIN</h1>
-        <p class="text-[0.65rem] md:text-xs text-brand-secondary font-bold uppercase tracking-[0.3em] mt-1.5">Members · Backup · Restore</p>
+        <p class="text-[0.65rem] md:text-xs text-brand-secondary font-bold uppercase tracking-[0.3em] mt-1.5">{{ settings.forum_name }}</p>
       </div>
       <a href="/" class="flex-shrink-0 text-xs text-gray-500 hover:text-brand-primary transition-colors">← Back</a>
     </div>
@@ -25,6 +29,72 @@
       <p class="text-xs text-gray-500 uppercase">Parking items</p>
       <p class="text-2xl font-bold">{{ parking_count }}</p>
     </div>
+  </div>
+
+  <!-- Brand identity -->
+  <div class="bg-dark-800 border border-dark-700 rounded-xl p-5 mb-6">
+    <h2 class="text-lg font-bold mb-2">Brand identity</h2>
+    <p class="text-sm text-gray-400 mb-4">Forum name, tagline, fonts, colors and logo. Changes apply on next page load.</p>
+    <form hx-post="/admin/brand" hx-target="#brand-result" hx-swap="innerHTML" hx-encoding="multipart/form-data" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Forum name</label>
+          <input type="text" name="forum_name" value="{{ settings.forum_name }}" required class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Tagline</label>
+          <input type="text" name="tagline" value="{{ settings.tagline }}" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Display font (titles)</label>
+          <select name="display_font" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+            {% for f in display_fonts %}<option value="{{ f }}" {% if f == settings.display_font %}selected{% endif %}>{{ f }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Body font</label>
+          <select name="body_font" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+            {% for f in body_fonts %}<option value="{{ f }}" {% if f == settings.body_font %}selected{% endif %}>{{ f }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Primary</label>
+          <input type="color" name="color_primary" value="{{ settings.color_primary }}" class="w-full h-10 bg-dark-900 border border-dark-700 rounded-md">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Secondary</label>
+          <input type="color" name="color_secondary" value="{{ settings.color_secondary }}" class="w-full h-10 bg-dark-900 border border-dark-700 rounded-md">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Tertiary</label>
+          <input type="color" name="color_tertiary" value="{{ settings.color_tertiary }}" class="w-full h-10 bg-dark-900 border border-dark-700 rounded-md">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs text-gray-500 uppercase mb-1">Logo (PNG / JPG / SVG, max 1 MB)</label>
+        <div class="flex items-center gap-3">
+          {% if settings.logo_path %}
+          <img src="/static/{{ settings.logo_path }}" alt="current logo" class="w-12 h-12 rounded-full object-cover border border-dark-700">
+          {% endif %}
+          <input type="file" name="logo" accept="image/png,image/jpeg,image/svg+xml" class="flex-1 text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+          {% if settings.logo_path %}
+          <button type="button" hx-post="/admin/brand/logo/clear" hx-target="#brand-result" hx-swap="innerHTML" class="text-xs text-gray-500 hover:text-red-400">Reset</button>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="px-4 py-2 bg-brand-primary text-gray-900 rounded-md text-sm font-semibold">Save & reload</button>
+        <div id="brand-result" class="text-xs text-gray-500"></div>
+      </div>
+    </form>
   </div>
 
   <!-- Backup -->

@@ -5,12 +5,16 @@
   <!-- Header -->
   <div class="relative mb-8 pb-6 border-b border-dark-700">
     <div class="flex items-center gap-4">
+      {% if settings.logo_path %}
+      <img src="/static/{{ settings.logo_path }}" alt="{{ settings.forum_name }}" class="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-full object-cover">
+      {% else %}
       <div class="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-full bg-brand-primary/15 border border-brand-primary/30 flex items-center justify-center">
-        <span class="font-display text-2xl md:text-3xl text-brand-primary">F</span>
+        <span class="font-display text-2xl md:text-3xl text-brand-primary">{{ (settings.forum_name or 'F')[0]|upper }}</span>
       </div>
+      {% endif %}
       <div class="flex-1 min-w-0">
-        <h1 class="font-display text-3xl md:text-4xl text-brand-primary leading-none tracking-wide">FORUM<br class="md:hidden"><span class="md:ml-2">OS</span></h1>
-        <p class="text-[0.65rem] md:text-xs text-brand-secondary font-bold uppercase tracking-[0.3em] mt-2">Operations Dashboard</p>
+        <h1 class="font-display text-3xl md:text-4xl text-brand-primary leading-none tracking-wide">{{ settings.forum_name }}</h1>
+        <p class="text-[0.65rem] md:text-xs text-brand-secondary font-bold uppercase tracking-[0.3em] mt-2">{{ settings.tagline }}</p>
       </div>
       <a href="/admin" class="flex-shrink-0 text-xs text-gray-500 hover:text-brand-primary transition-colors">⚙ Admin</a>
     </div>

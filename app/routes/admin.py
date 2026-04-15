@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import re
 import secrets
 import zipfile
 from datetime import datetime
@@ -15,6 +16,13 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Member, ParkingItem
+from app.branding import (
+    branding_context,
+    get_or_create_settings,
+    DISPLAY_FONTS,
+    BODY_FONTS,
+    VALID_COLOR_RE,
+)
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 security = HTTPBasic()
@@ -81,11 +89,134 @@ def admin_page(request: Request, db: Session = Depends(get_db)):
     members = db.query(Member).order_by(Member.display_order, Member.name).all()
     return templates.TemplateResponse("admin.html", {
         "request": request,
+        **branding_context(db),
         "backups": backups,
         "members": members,
         "member_count": len(members),
         "parking_count": db.query(ParkingItem).count(),
     })
+
+
+# ---------- Brand identity ----------
+
+UPLOAD_DIR = Path("/app/app/static/uploads")
+LOGO_MAX_BYTES = 1 * 1024 * 1024  # 1 MB
+LOGO_ALLOWED_EXT = {"png": "png", "jpg": "jpg", "jpeg": "jpg", "svg": "svg"}
+
+
+def _logo_ext_from_upload(file: UploadFile) -> str | None:
+    ct = (file.content_type or "").lower()
+    if ct == "image/png":
+        return "png"
+    if ct in ("image/jpeg", "image/jpg"):
+        return "jpg"
+    if ct in ("image/svg+xml", "image/svg"):
+        return "svg"
+    name = (file.filename or "").lower()
+    for ext_hint, canonical in LOGO_ALLOWED_EXT.items():
+        if name.endswith("." + ext_hint):
+            return canonical
+    return None
+
+
+def _clear_existing_logos():
+    if UPLOAD_DIR.exists():
+        for canonical in set(LOGO_ALLOWED_EXT.values()):
+            old = UPLOAD_DIR / f"logo.{canonical}"
+            if old.exists():
+                old.unlink()
+
+
+@router.post("/brand")
+async def brand_update(
+    request: Request,
+    db: Session = Depends(get_db),
+    forum_name: str = Form(""),
+    tagline: str = Form(""),
+    display_font: str = Form(""),
+    body_font: str = Form(""),
+    color_primary: str = Form(""),
+    color_secondary: str = Form(""),
+    color_tertiary: str = Form(""),
+    logo: UploadFile | None = File(None),
+):
+    errors: list[str] = []
+
+    forum_name = (forum_name or "").strip()
+    tagline = (tagline or "").strip()
+    if not forum_name:
+        errors.append("forum_name is required")
+    if len(forum_name) > 100:
+        errors.append("forum_name is too long (max 100)")
+    if len(tagline) > 200:
+        errors.append("tagline is too long (max 200)")
+
+    if display_font not in DISPLAY_FONTS:
+        errors.append(f"display_font invalid (allowed: {', '.join(DISPLAY_FONTS.keys())})")
+    if body_font not in BODY_FONTS:
+        errors.append(f"body_font invalid (allowed: {', '.join(BODY_FONTS.keys())})")
+
+    for label, value in [("color_primary", color_primary), ("color_secondary", color_secondary), ("color_tertiary", color_tertiary)]:
+        if not re.match(VALID_COLOR_RE, value or ""):
+            errors.append(f"{label} must be a hex color like #F59E0B")
+
+    if errors:
+        return Response(
+            status_code=400,
+            content="<span class='text-red-400'>" + " · ".join(errors) + "</span>",
+            media_type="text/html",
+        )
+
+    settings = get_or_create_settings(db)
+    settings.forum_name = forum_name
+    settings.tagline = tagline
+    settings.display_font = display_font
+    settings.body_font = body_font
+    settings.color_primary = color_primary.upper()
+    settings.color_secondary = color_secondary.upper()
+    settings.color_tertiary = color_tertiary.upper()
+
+    logo_msg = ""
+    if logo is not None and (logo.filename or "").strip():
+        ext = _logo_ext_from_upload(logo)
+        if ext is None:
+            return Response(
+                status_code=400,
+                content="<span class='text-red-400'>logo: unsupported file type (PNG, JPG or SVG only)</span>",
+                media_type="text/html",
+            )
+        content = await logo.read()
+        if len(content) > LOGO_MAX_BYTES:
+            return Response(
+                status_code=400,
+                content=f"<span class='text-red-400'>logo: file too large (max {LOGO_MAX_BYTES // 1024} KB)</span>",
+                media_type="text/html",
+            )
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        _clear_existing_logos()
+        dest = UPLOAD_DIR / f"logo.{ext}"
+        dest.write_bytes(content)
+        settings.logo_path = f"uploads/logo.{ext}"
+        logo_msg = " · logo updated"
+
+    db.commit()
+
+    return Response(
+        content=f"<span class='text-emerald-400'>✓ saved{logo_msg} — reloading…</span><script>setTimeout(()=>location.reload(), 600);</script>",
+        media_type="text/html",
+    )
+
+
+@router.post("/brand/logo/clear")
+def brand_logo_clear(db: Session = Depends(get_db)):
+    settings = get_or_create_settings(db)
+    settings.logo_path = ""
+    _clear_existing_logos()
+    db.commit()
+    return Response(
+        content="<span class='text-emerald-400'>✓ logo removed — reloading…</span><script>setTimeout(()=>location.reload(), 600);</script>",
+        media_type="text/html",
+    )
 
 
 @router.get("/backup")
