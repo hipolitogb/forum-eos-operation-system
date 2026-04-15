@@ -1,0 +1,19 @@
+<div id="item-{{ item.id }}" class="parking-item relative bg-white/[0.01] border border-dark-700 rounded-lg p-3 mb-2 cursor-grab group" data-item-id="{{ item.id }}" draggable="false">
+  <span class="drag-handle text-gray-600 text-sm opacity-0 group-hover:opacity-50 absolute left-1 top-1/2 -translate-y-1/2 cursor-grab select-none" style="letter-spacing:-2px">&#9783;</span>
+  <div class="flex justify-between items-start pl-4">
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-sm">{{ item.person_name }} — {{ item.title }}</p>
+      <p class="text-xs text-gray-400 mt-1 line-clamp-2">{{ item.context }}</p>
+      <div class="flex items-center gap-2 mt-2 flex-wrap">
+        <span class="tag-{{ item.tag }} text-[0.6rem] font-semibold uppercase tracking-wide px-2 py-0.5 rounded">{{ tag_labels.get(item.tag, item.tag) }}</span>
+        {% if item.deep_dive_date %}
+        <span class="text-[0.65rem] text-pink-400">Deep Dive: {{ item.deep_dive_date }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
+      <button hx-get="/parking/{{ item.id }}/edit" hx-target="#item-{{ item.id }}" hx-swap="outerHTML" class="text-gray-500 hover:text-brand-primary text-sm px-1" title="Edit">&#9998;</button>
+      <button hx-delete="/parking/{{ item.id }}" hx-target="#item-{{ item.id }}" hx-swap="outerHTML swap:0.2s" hx-confirm="Delete: {{ item.title }}?" class="text-gray-500 hover:text-red-400 text-sm px-1" title="Delete">&times;</button>
+    </div>
+  </div>
+</div>

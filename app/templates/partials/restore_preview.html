@@ -1,0 +1,39 @@
+{% if has_blocking %}
+<div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+  <p class="text-red-400 font-semibold text-sm mb-2">❌ Blocking errors — fix before applying:</p>
+  <ul class="text-xs text-red-300 space-y-1 font-mono">
+    {% for e in errors %}{% if not e.startswith('WARN:') %}<li>{{ e }}</li>{% endif %}{% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="bg-brand-primary/10 border border-brand-primary/30 rounded-lg p-4 space-y-3">
+  <p class="text-brand-primary font-semibold text-sm">✓ CSVs valid</p>
+  <div class="grid grid-cols-2 gap-3 text-sm">
+    {% if has_members %}
+    <div><span class="text-gray-500">Members:</span> {{ members_count_cur }} → <span class="text-brand-primary font-semibold">{{ members_count_new }}</span></div>
+    {% else %}
+    <div><span class="text-gray-500">Members:</span> <span class="text-gray-600">no changes ({{ members_count_cur }})</span></div>
+    {% endif %}
+    {% if has_parking %}
+    <div><span class="text-gray-500">Parking:</span> {{ parking_count_cur }} → <span class="text-brand-primary font-semibold">{{ parking_count_new }}</span></div>
+    {% else %}
+    <div><span class="text-gray-500">Parking:</span> <span class="text-gray-600">no changes ({{ parking_count_cur }})</span></div>
+    {% endif %}
+  </div>
+  {% if errors %}
+  <div class="pt-2 border-t border-brand-primary/20">
+    <p class="text-xs text-brand-primary font-semibold mb-1">Warnings (non-blocking):</p>
+    <ul class="text-xs text-brand-primary/70 space-y-0.5 font-mono">
+      {% for e in errors %}{% if e.startswith('WARN:') %}<li>{{ e[6:] }}</li>{% endif %}{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  <form hx-post="/admin/restore/apply" hx-target="#restore-result" hx-swap="innerHTML" class="pt-2">
+    {% if has_members %}<input type="hidden" name="apply_members" value="1">{% endif %}
+    {% if has_parking %}<input type="hidden" name="apply_parking" value="1">{% endif %}
+    <input type="hidden" name="members_text" value="{{ members_text | e }}">
+    <input type="hidden" name="parking_text" value="{{ parking_text | e }}">
+    <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-md text-sm font-semibold" onclick="return confirm('This replaces the affected table(s). Auto-backup runs first. Continue?')">Apply restore (destructive)</button>
+  </form>
+</div>
+{% endif %}

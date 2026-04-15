@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forum Operating System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Alfa Slab One"', 'serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            dark: { 900: '#0e0d0b', 800: '#171512', 700: '#2a2621', 600: '#3a352e' },
+            brand: {
+              primary: '#F59E0B',
+              'primary-soft': '#FCD34D',
+              'primary-deep': '#D97706',
+              secondary: '#EF4444',
+              'secondary-deep': '#B91C1C',
+              tertiary: '#3B82F6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245, 158, 11, 0.08), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(239, 68, 68, 0.06), transparent 60%),
+        #0e0d0b;
+      background-attachment: fixed;
+    }
+
+    /* Tags */
+    .tag-open { background: rgba(245, 158, 11, 0.14); color: #F59E0B; }
+    .tag-deep-dive { background: rgba(239, 68, 68, 0.14); color: #F87171; }
+    .tag-topical { background: rgba(96, 165, 250, 0.14); color: #93C5FD; }
+    .tag-recurring { background: rgba(251, 146, 60, 0.14); color: #FDBA74; }
+    .tag-improving { background: rgba(52, 211, 153, 0.14); color: #6EE7B7; }
+
+    .parking-item { transition: transform 0.15s, opacity 0.15s; }
+    .parking-item.sortable-ghost { opacity: 0.4; transform: scale(0.98); }
+    .parking-item.sortable-chosen { box-shadow: 0 0 0 1px #F59E0B; }
+    .htmx-swapping { opacity: 0; transition: opacity 0.2s; }
+
+    /* Decorative accent stripe */
+    .stripe-accent {
+      background-image: repeating-linear-gradient(
+        45deg,
+        #EF4444 0 8px,
+        #F59E0B 8px 16px
+      );
+    }
+  </style>
+</head>
+<body class="font-sans text-gray-200 min-h-screen antialiased">
+  {% block content %}{% endblock %}
+</body>
+</html>

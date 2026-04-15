@@ -1,0 +1,23 @@
+<form id="item-{{ item.id }}" class="parking-item bg-dark-900 border border-brand-primary/30 rounded-lg p-4 mb-2 space-y-2" hx-put="/parking/{{ item.id }}" hx-target="this" hx-swap="outerHTML" data-item-id="{{ item.id }}">
+  <div class="flex gap-2">
+    <select name="person_name" class="bg-dark-800 border border-dark-700 rounded px-2 py-1.5 text-sm w-36 flex-shrink-0">
+      {% for name in member_names %}
+      <option value="{{ name }}" {% if name == item.person_name %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <input name="title" value="{{ item.title }}" class="bg-dark-800 border border-dark-700 rounded px-2 py-1.5 text-sm flex-1" required>
+  </div>
+  <div class="flex gap-2">
+    <select name="tag" class="bg-dark-800 border border-dark-700 rounded px-2 py-1.5 text-sm w-36">
+      {% for t in all_tags %}
+      <option value="{{ t }}" {% if t == item.tag %}selected{% endif %}>{{ tag_labels[t] }}</option>
+      {% endfor %}
+    </select>
+    <input name="deep_dive_date" type="date" value="{{ item.deep_dive_date or '' }}" class="bg-dark-800 border border-dark-700 rounded px-2 py-1.5 text-sm flex-1">
+  </div>
+  <textarea name="context" rows="3" class="w-full bg-dark-800 border border-dark-700 rounded px-2 py-1.5 text-sm">{{ item.context }}</textarea>
+  <div class="flex gap-2">
+    <button type="submit" class="px-3 py-1.5 bg-brand-primary text-gray-900 rounded text-sm font-semibold">Save</button>
+    <button type="button" hx-get="/parking/{{ item.id }}" hx-target="#item-{{ item.id }}" hx-swap="outerHTML" class="px-3 py-1.5 bg-dark-700 text-gray-400 rounded text-sm">Cancel</button>
+  </div>
+</form>

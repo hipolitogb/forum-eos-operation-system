@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="relative mb-8 pb-6 border-b border-dark-700">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-full bg-brand-primary/15 border border-brand-primary/30 flex items-center justify-center">
+        <span class="font-display text-2xl md:text-3xl text-brand-primary">F</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h1 class="font-display text-3xl md:text-4xl text-brand-primary leading-none tracking-wide">FORUM<br class="md:hidden"><span class="md:ml-2">OS</span></h1>
+        <p class="text-[0.65rem] md:text-xs text-brand-secondary font-bold uppercase tracking-[0.3em] mt-2">Operations Dashboard</p>
+      </div>
+      <a href="/admin" class="flex-shrink-0 text-xs text-gray-500 hover:text-brand-primary transition-colors">⚙ Admin</a>
+    </div>
+    <div class="stripe-accent h-1.5 rounded-full mt-4 opacity-80"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-6 overflow-x-auto" id="tab-nav">
+    <button onclick="showTab('parking')" class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition-all" data-tab="parking">Parking Lot</button>
+    <button onclick="showTab('members')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-tab="members">Members</button>
+    <button onclick="showTab('agenda')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-tab="agenda">Agenda</button>
+    <button onclick="showTab('constitution')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-tab="constitution">Constitution</button>
+    <button onclick="showTab('fivepct')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all" data-tab="fivepct">5% Reflections</button>
+  </div>
+
+  <!-- TAB: Parking Lot -->
+  <div id="tab-parking" class="tab-content">
+    <div id="parking-section" hx-get="/parking" hx-trigger="load" hx-swap="innerHTML">
+      {% include "partials/parking_section.html" %}
+    </div>
+
+    <!-- Add form -->
+    <div class="mt-4">
+      <button onclick="document.getElementById('add-form').classList.toggle('hidden')" class="w-full py-3 border border-dashed border-brand-primary/40 rounded-lg text-brand-primary text-sm font-semibold hover:bg-brand-primary/10 transition">+ Add topic</button>
+      <form id="add-form" class="hidden mt-3 bg-dark-800 border border-dark-700 rounded-lg p-4 space-y-3" hx-post="/parking" hx-target="#parking-section" hx-swap="innerHTML" hx-on::after-request="this.reset(); this.classList.add('hidden'); initSortable();">
+        <div class="flex gap-2">
+          <select name="person_name" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40 flex-shrink-0">
+            {% for name in member_names %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+          </select>
+          <input name="title" placeholder="Topic title" required class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm flex-1">
+        </div>
+        <div class="flex gap-2">
+          <select name="tag" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40">
+            {% for t in all_tags %}<option value="{{ t }}">{{ tag_labels[t] }}</option>{% endfor %}
+          </select>
+          <input name="deep_dive_date" type="date" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm flex-1" title="Deep Dive date (optional)">
+        </div>
+        <textarea name="context" placeholder="Context..." rows="2" class="w-full bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm"></textarea>
+        <div class="flex gap-2">
+          <button type="submit" class="px-4 py-2 bg-brand-primary text-gray-900 hover:bg-brand-primary-deep transition-colors rounded-md text-sm font-semibold">Save</button>
+          <button type="button" onclick="this.closest('form').classList.add('hidden')" class="px-4 py-2 bg-dark-700 text-gray-400 rounded-md text-sm">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TAB: Members -->
+  <div id="tab-members" class="tab-content hidden">
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div id="members-list" class="flex flex-wrap gap-2 mb-4">
+        {% for member in members %}
+          {% include "partials/member_chip.html" %}
+        {% endfor %}
+      </div>
+      <form hx-post="/members" hx-target="#members-list" hx-swap="beforeend" hx-on::after-request="this.reset();" class="flex gap-2">
+        <input name="name" placeholder="Name" required class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm flex-1">
+        <input name="role" placeholder="Role (optional)" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40">
+        <button type="submit" class="px-4 py-2 bg-brand-primary text-gray-900 hover:bg-brand-primary-deep transition-colors rounded-md text-sm font-semibold flex-shrink-0">Add</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TAB: Agenda -->
+  <div id="tab-agenda" class="tab-content hidden">
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5 space-y-4">
+      <h3 class="text-brand-primary font-bold text-sm uppercase tracking-wider mb-3">Meeting agenda — standard forum</h3>
+      {% set agenda = [
+        ("0:00", "Arrival + coffee", "15 min", ""),
+        ("0:15", "Administrative items", "15 min", "Next meeting date, logistics, forum rules."),
+        ("0:30", "5% Reflections", "45 min", "5 min per person. The moderator starts."),
+        ("1:15", "Break", "10 min", ""),
+        ("1:25", "Communication Starter", "25 min", "One question, everyone answers (~3 min each)."),
+        ("1:50", "Parking Lot — Review", "20 min", "Each owner speaks for 2 min: still relevant? anything changed?"),
+        ("2:10", "Break", "10 min", ""),
+        ("2:20", "Deep Dive or Topical", "60 min", "Presentation → questions → experiences → reflection."),
+        ("3:20", "Break", "10 min", ""),
+        ("3:30", "Second block", "40 min", "Lifeline from 1-2 members, or group brainstorm."),
+        ("4:10", "Close + commitments", "20 min", "One word about how you're leaving. Next date."),
+        ("4:30", "Formal close", "", "Eat / hang out together.")
+      ] %}
+      {% for time, title, dur, desc in agenda %}
+      <div class="flex gap-3 items-start {% if 'Break' in title %}opacity-50{% endif %}">
+        <span class="text-brand-primary text-xs font-semibold w-10 flex-shrink-0 pt-0.5">{{ time }}</span>
+        <div>
+          <span class="font-semibold text-sm">{{ title }}{% if dur %} <span class="text-xs text-gray-500 font-normal ml-1">{{ dur }}</span>{% endif %}</span>
+          {% if desc %}<p class="text-xs text-gray-400 mt-0.5">{{ desc }}</p>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TAB: Constitution -->
+  <div id="tab-constitution" class="tab-content hidden">
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        {% set pillars = [
+          ("Vulnerability", "Be open and honest, especially about what's hard"),
+          ("Confidentiality", "What's said in the Forum stays in the Forum. Period."),
+          ("Gestalt", "Speak from your own experience, don't give advice"),
+          ("Personal responsibility", "Each member owns their Forum experience")
+        ] %}
+        {% for name, desc in pillars %}
+        <div class="bg-white/[0.03] border border-dark-700 rounded-lg p-3">
+          <p class="font-semibold text-sm">{{ name }}</p>
+          <p class="text-xs text-gray-400 mt-1">{{ desc }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr><th class="text-left text-brand-primary text-xs uppercase py-2 px-3">Topic</th><th class="text-left text-brand-primary text-xs uppercase py-2 px-3">Rule</th></tr></thead>
+        <tbody class="text-gray-400">
+          {% set rules = [
+            ("Confidentiality", "Breach = immediate expulsion. Readmission by unanimous vote."),
+            ("Meetings", "11 meetings + 1 retreat per fiscal year."),
+            ("Attendance", "Missing 2 or the retreat = out. Readmission by unanimous vote."),
+            ("Punctuality", "Arriving late = half absence."),
+            ("Forum Mindset", "Listen with curiosity. Speak from your own experience."),
+            ("Phones", "None during meetings and retreat, except during breaks."),
+            ("Alcohol", "None during sessions. At retreats, only during designated moments."),
+            ("Business", "No material transactions between members."),
+            ("Relationships", "Not between members. If one develops, one leaves."),
+            ("Size", "8 to 10 members."),
+            ("Departure", "An exit Deep Dive is expected."),
+            ("Upskilling", "One training per year.")
+          ] %}
+          {% for topic, rule in rules %}
+          <tr class="border-t border-dark-700"><td class="py-2 px-3 font-medium text-gray-300 whitespace-nowrap">{{ topic }}</td><td class="py-2 px-3">{{ rule }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: 5% Reflections -->
+  <div id="tab-fivepct" class="tab-content hidden">
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <p class="text-sm text-gray-400 mb-4">Each member rates four life areas from 1 to 10, then shares what's behind the number. The goal is to reach the <span class="text-brand-primary font-semibold">uncomfortable 5%</span>.</p>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        {% set areas = [
+          ("👨‍👩‍👧", "Family / Friends", "text-pink-400"),
+          ("🫀", "Health", "text-emerald-400"),
+          ("🏗️", "Work", "text-blue-400"),
+          ("💰", "Finance", "text-brand-primary")
+        ] %}
+        {% for icon, label, color in areas %}
+        <div class="bg-white/[0.03] border border-dark-700 rounded-xl p-5 text-center">
+          <span class="text-3xl block mb-1">{{ icon }}</span>
+          <span class="text-3xl font-black {{ color }} block">?</span>
+          <span class="text-xs text-gray-400 uppercase tracking-wider">{{ label }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="bg-brand-primary/[0.06] border-l-2 border-brand-primary rounded-r-lg px-4 py-3 text-sm text-gray-400">
+        <strong>Timing:</strong> 5 minutes per person. The moderator starts. With 8 members ≈ 40 min total.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === name);
+    if (btn.dataset.tab === name) {
+      btn.classList.add('bg-brand-primary/20', 'text-brand-primary');
+      btn.classList.remove('text-gray-500', 'hover:text-gray-300');
+    } else {
+      btn.classList.remove('bg-brand-primary/20', 'text-brand-primary');
+      btn.classList.add('text-gray-500', 'hover:text-gray-300');
+    }
+  });
+  if (name === 'parking') setTimeout(initSortable, 100);
+}
+
+function initSortable() {
+  document.querySelectorAll('.parking-group-items').forEach(el => {
+    if (el._sortable) el._sortable.destroy();
+    el._sortable = new Sortable(el, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: function() {
+        const ids = [...el.children].filter(c => c.dataset.itemId).map(c => c.dataset.itemId);
+        htmx.ajax('PUT', '/parking/reorder', { values: { ids: JSON.stringify(ids) }, swap: 'none' });
+      }
+    });
+  });
+}
+
+showTab('parking');
+document.addEventListener('htmx:afterSwap', () => setTimeout(initSortable, 50));
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% for person, items in parking_groups.items() %}
+<div class="mb-5">
+  <div class="text-xs font-bold text-brand-primary uppercase tracking-wider pb-2 mb-2 border-b border-brand-primary/20 flex items-center gap-2">
+    {{ person }}
+    <span class="text-[0.65rem] font-medium text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">{{ items|length }}</span>
+  </div>
+  <div class="parking-group-items" data-person="{{ person }}">
+    {% for item in items %}
+      {% include "partials/parking_item.html" %}
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}

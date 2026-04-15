@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    container_name: forum-app
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./backups:/app/backups
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: forum-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-forum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forum}
+      POSTGRES_DB: ${POSTGRES_DB:-forum}
+    volumes:
+      - forum_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  forum_db_data:
