@@ -1,3 +1,4 @@
+import os
 from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Depends, Form, Query
@@ -79,6 +80,15 @@ def login_submit(
     base_url = str(request.base_url).rstrip("/")
     link = f"{base_url}/login/verify?token={token}"
 
+    api_key = settings.email_api_key or os.environ.get("EMAIL_API_KEY", "")
+    if not api_key:
+        return templates.TemplateResponse("login_sent.html", {
+            "request": request,
+            **branding_context(db),
+            "email": email,
+            "dev_link": link,
+        })
+
     err = send_magic_link(settings, to_email=email, link=link)
     if err:
         return RedirectResponse("/login?error=" + quote(f"Could not send email: {err}"), status_code=303)
@@ -87,6 +97,7 @@ def login_submit(
         "request": request,
         **branding_context(db),
         "email": email,
+        "dev_link": None,
     })
 
 
