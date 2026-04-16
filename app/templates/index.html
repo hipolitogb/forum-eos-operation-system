@@ -64,11 +64,16 @@
   <!-- TAB: Members -->
   <div id="tab-members" class="tab-content hidden">
     <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      {% if members %}
       <div id="members-list" class="flex flex-wrap gap-2 mb-4">
         {% for member in members %}
           {% include "partials/member_chip.html" %}
         {% endfor %}
       </div>
+      {% else %}
+      <div class="empty-state mb-4"><strong>No members found.</strong><br>Add one now using the form below.</div>
+      <div id="members-list" class="flex flex-wrap gap-2 mb-4"></div>
+      {% endif %}
       <form hx-post="/members" hx-target="#members-list" hx-swap="beforeend" hx-on::after-request="this.reset();" class="flex gap-2">
         <input name="name" placeholder="Name" required class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm flex-1">
         <input name="role" placeholder="Role (optional)" class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2 text-sm w-40">

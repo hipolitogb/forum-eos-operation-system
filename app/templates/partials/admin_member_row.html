@@ -13,12 +13,12 @@
       hx-get="/admin/members/{{ member.id }}/edit"
       hx-target="#admin-member-{{ member.id }}"
       hx-swap="outerHTML"
-      class="text-xs text-brand-primary hover:text-brand-primary-deep">Edit</button>
+      class="btn-xs btn-xs-primary">Edit</button>
     <button
       hx-delete="/admin/members/{{ member.id }}"
       hx-target="#admin-member-{{ member.id }}"
       hx-swap="outerHTML swap:0.15s"
       hx-confirm="Delete {{ member.name }}?"
-      class="text-xs text-gray-500 hover:text-red-400">Delete</button>
+      class="btn-xs btn-xs-danger">Delete</button>
   </td>
 </tr>

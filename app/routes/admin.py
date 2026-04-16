@@ -7,6 +7,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
+import bcrypt
 from fastapi import APIRouter, Request, Depends, UploadFile, File, Form, Response, HTTPException, status
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -14,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.models import (
     Member,
     ParkingItem,
@@ -22,6 +23,7 @@ from app.models import (
     ConstitutionPillar,
     ConstitutionRule,
     ReflectionArea,
+    AdminUser,
 )
 from app.branding import (
     branding_context,
@@ -32,20 +34,38 @@ from app.branding import (
     VALID_COLOR_RE,
 )
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+# Fallback env var — only used if the admin_users table is empty or an
+# operator needs to recover access. Normally auth hits the DB.
+ADMIN_PASSWORD_ENV = os.getenv("ADMIN_PASSWORD", "")
 security = HTTPBasic()
 
 
+def _check_password(user: AdminUser, password: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
+
+
 def require_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    if not ADMIN_PASSWORD:
-        raise HTTPException(status_code=500, detail="ADMIN_PASSWORD not configured")
-    if not secrets.compare_digest(credentials.password, ADMIN_PASSWORD):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
+    # Use a short-lived session so the dependency is simple and doesn't
+    # interact with the request-scoped DB dependency (avoids ordering issues
+    # when this dep is declared at the router level).
+    db = SessionLocal()
+    try:
+        user = db.query(AdminUser).filter_by(username=credentials.username).one_or_none()
+        if user and _check_password(user, credentials.password):
+            return credentials.username
+        # Env-var escape hatch. Accepts any username.
+        if ADMIN_PASSWORD_ENV and secrets.compare_digest(credentials.password, ADMIN_PASSWORD_ENV):
+            return credentials.username
+    finally:
+        db.close()
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid credentials",
+        headers={"WWW-Authenticate": "Basic"},
+    )
 
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -90,11 +110,12 @@ def _persist_backup(db: Session, label: str) -> Path:
 
 
 @router.get("")
-def admin_page(request: Request, db: Session = Depends(get_db)):
+def admin_page(request: Request, db: Session = Depends(get_db), _user: str = Depends(require_admin)):
     backups = []
     if BACKUP_DIR.exists():
         backups = sorted([p.name for p in BACKUP_DIR.iterdir() if p.is_dir()], reverse=True)[:20]
     members = db.query(Member).order_by(Member.display_order, Member.name).all()
+    admin_user = db.query(AdminUser).filter_by(id=1).one_or_none()
     return templates.TemplateResponse("admin.html", {
         "request": request,
         **branding_context(db),
@@ -103,6 +124,8 @@ def admin_page(request: Request, db: Session = Depends(get_db)):
         "members": members,
         "member_count": len(members),
         "parking_count": db.query(ParkingItem).count(),
+        "admin_username": admin_user.username if admin_user else "admin",
+        "using_default_admin_creds": bool(admin_user and _check_password(admin_user, "admin") and admin_user.username == "admin"),
     })
 
 
@@ -818,6 +841,60 @@ def admin_area_delete(item_id: int, db: Session = Depends(get_db)):
         db.delete(item)
         db.commit()
     return Response(content="")
+
+
+# ---------- Admin credentials ----------
+
+@router.post("/credentials")
+def admin_update_credentials(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_password: str = Form(""),
+    new_username: str = Form(""),
+    new_password: str = Form(""),
+    confirm_password: str = Form(""),
+):
+    def error(msg: str) -> Response:
+        return Response(
+            content=f"<span class='text-red-400'>{msg}</span>",
+            media_type="text/html",
+            status_code=400,
+        )
+
+    new_username = (new_username or "").strip()
+    if not new_username or len(new_username) > 100:
+        return error("username is required (max 100 chars)")
+    if not new_password or len(new_password) < 6:
+        return error("new password must be at least 6 characters")
+    if new_password != confirm_password:
+        return error("passwords do not match")
+
+    user = db.query(AdminUser).filter_by(id=1).one_or_none()
+    if user is None:
+        return error("admin user missing — run migrations")
+
+    # Verify current password against the stored hash OR the env fallback.
+    ok = _check_password(user, current_password)
+    if not ok and ADMIN_PASSWORD_ENV:
+        ok = secrets.compare_digest(current_password, ADMIN_PASSWORD_ENV)
+    if not ok:
+        return error("current password is incorrect")
+
+    user.username = new_username
+    user.password_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    db.commit()
+
+    # The browser has cached the old Basic Auth credentials. Easiest way to
+    # force re-auth with the new ones is to respond with 401, which evicts
+    # them. We tell the user first, then point them at a sentinel URL to
+    # trigger the prompt.
+    return Response(
+        content=(
+            "<span class='text-emerald-400'>✓ saved — you'll be prompted to sign in again.</span>"
+            "<script>setTimeout(()=>{window.location.href='/admin';}, 1200);</script>"
+        ),
+        media_type="text/html",
+    )
 
 
 # ---------- Reflections intro/footer text ----------

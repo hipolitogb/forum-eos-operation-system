@@ -1,3 +1,14 @@
+{% if members %}
 {% for member in members %}
 {% include "partials/admin_member_row.html" %}
 {% endfor %}
+{% else %}
+<tr id="admin-members-empty"><td colspan="4" class="py-6 px-3 text-center text-sm text-gray-500">
+  <div class="inline-flex items-center gap-2">
+    <span class="text-gray-600">No members yet.</span>
+    <button type="button"
+      onclick="if(!document.getElementById('admin-member-new')){document.getElementById('admin-members-empty').remove();htmx.ajax('GET','/admin/members/new',{target:'#admin-members-tbody',swap:'beforeend'});}"
+      class="btn-xs btn-xs-primary">Add one now</button>
+  </div>
+</td></tr>
+{% endif %}

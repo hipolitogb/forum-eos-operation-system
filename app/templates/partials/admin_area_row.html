@@ -4,7 +4,7 @@
   <td class="py-2 px-2"><input type="text" name="color_class" value="{{ item.color_class }}" placeholder="text-pink-400" class="w-full bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm font-mono"></td>
   <td class="py-2 px-2"><input type="number" name="display_order" value="{{ item.display_order }}" class="w-14 bg-dark-900 border border-dark-700 rounded px-2 py-1 text-sm font-mono"></td>
   <td class="py-2 px-2 text-right space-x-2 whitespace-nowrap">
-    <button type="button" hx-post="/admin/areas/{{ item.id }}" hx-target="#admin-area-{{ item.id }}" hx-swap="outerHTML" hx-include="closest tr" class="text-xs font-semibold text-brand-primary hover:text-brand-primary-deep">Save</button>
-    <button type="button" hx-delete="/admin/areas/{{ item.id }}" hx-target="#admin-area-{{ item.id }}" hx-swap="outerHTML swap:0.15s" hx-confirm="Delete area?" class="text-xs text-gray-500 hover:text-red-400">Delete</button>
+    <button type="button" hx-post="/admin/areas/{{ item.id }}" hx-target="#admin-area-{{ item.id }}" hx-swap="outerHTML" hx-include="closest tr" class="btn-xs btn-xs-primary">Save</button>
+    <button type="button" hx-delete="/admin/areas/{{ item.id }}" hx-target="#admin-area-{{ item.id }}" hx-swap="outerHTML swap:0.15s" hx-confirm="Delete area?" class="btn-xs btn-xs-danger">Delete</button>
   </td>
 </tr>

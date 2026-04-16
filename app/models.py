@@ -80,3 +80,15 @@ class ReflectionArea(Base):
     label = Column(String(100), nullable=False, default="")
     color_class = Column(String(50), nullable=False, default="text-brand-primary")
     display_order = Column(Integer, nullable=False, default=0)
+
+
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    # Singleton (id=1) for now — one admin login. Designed to allow a second
+    # row later without migrations.
+    id = Column(Integer, primary_key=True)
+    username = Column(String(100), nullable=False, unique=True)
+    password_hash = Column(String(200), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

@@ -18,12 +18,12 @@
       hx-target="#admin-member-{{ member.id }}"
       hx-swap="outerHTML"
       hx-include="closest tr"
-      class="text-xs font-semibold text-brand-primary hover:text-brand-primary-deep">Save</button>
+      class="btn-xs btn-xs-primary">Save</button>
     <button type="button"
       hx-get="/admin/members/{{ member.id }}"
       hx-target="#admin-member-{{ member.id }}"
       hx-swap="outerHTML"
-      class="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
+      class="btn-xs btn-xs-ghost">Cancel</button>
   </td>
 </tr>
 {% else %}
@@ -46,10 +46,10 @@
       hx-target="#admin-members-tbody"
       hx-swap="innerHTML"
       hx-include="closest tr"
-      class="text-xs font-semibold text-brand-primary hover:text-brand-primary-deep">Create</button>
+      class="btn-xs btn-xs-primary">Create</button>
     <button type="button"
       onclick="document.getElementById('admin-member-new').remove();"
-      class="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
+      class="btn-xs btn-xs-ghost">Cancel</button>
   </td>
 </tr>
 {% endif %}

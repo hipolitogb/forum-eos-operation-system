@@ -97,11 +97,43 @@
     </form>
   </div>
 
-  <!-- Backup -->
+  <!-- Admin credentials -->
   <div class="bg-dark-800 border border-dark-700 rounded-xl p-5 mb-6">
-    <h2 class="text-lg font-bold mb-2">Backup</h2>
-    <p class="text-sm text-gray-400 mb-4">Download a ZIP with <code class="text-brand-primary">members.csv</code> and <code class="text-brand-primary">parking-lot.csv</code>. A timestamped copy is also saved on the server.</p>
-    <a href="/admin/backup" class="inline-block px-4 py-2 bg-brand-primary text-gray-900 rounded-md text-sm font-semibold">Download backup</a>
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-lg font-bold">Admin credentials</h2>
+      <span class="text-[0.6rem] uppercase tracking-widest text-gray-500 font-mono">user: {{ admin_username }}</span>
+    </div>
+    {% if using_default_admin_creds %}
+    <div class="bg-red-500/10 border border-red-500/30 rounded-md px-3 py-2 mb-4 text-xs text-red-300">
+      ⚠ You're using the default <code>admin</code> / <code>admin</code>. Change it now.
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400 mb-4">Password is stored bcrypt-hashed in the database. Change here; confirm with the current password.</p>
+    {% endif %}
+    <form hx-post="/admin/credentials" hx-target="#credentials-result" hx-swap="innerHTML" class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-500 uppercase mb-1">Current password</label>
+        <input type="password" name="current_password" required autocomplete="current-password" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">New username</label>
+          <input type="text" name="new_username" value="{{ admin_username }}" required class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">New password</label>
+          <input type="password" name="new_password" required minlength="6" autocomplete="new-password" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Confirm</label>
+          <input type="password" name="confirm_password" required minlength="6" autocomplete="new-password" class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-1">
+        <button type="submit" class="px-4 py-2 bg-brand-primary text-gray-900 rounded-md text-sm font-semibold">Update credentials</button>
+        <div id="credentials-result" class="text-xs"></div>
+      </div>
+    </form>
   </div>
 
   <!-- Members -->
@@ -263,6 +295,18 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="mt-10 mb-4 pb-2 border-b border-dark-700/60 flex items-center gap-3">
+    <span class="text-[0.6rem] uppercase tracking-[0.3em] text-gray-500 font-semibold">Data</span>
+    <span class="flex-1 h-px bg-dark-700/60"></span>
+  </div>
+
+  <!-- Backup -->
+  <div class="bg-dark-800 border border-dark-700 rounded-xl p-5 mb-6">
+    <h2 class="text-lg font-bold mb-2">Backup</h2>
+    <p class="text-sm text-gray-400 mb-4">Download a ZIP with <code class="text-brand-primary">members.csv</code> and <code class="text-brand-primary">parking-lot.csv</code>. A timestamped copy is also saved on the server.</p>
+    <a href="/admin/backup" class="inline-block px-4 py-2 bg-brand-primary text-gray-900 rounded-md text-sm font-semibold">Download backup</a>
   </div>
 
   <!-- Restore -->
