@@ -33,6 +33,7 @@ from app.branding import (
     BODY_FONTS,
     VALID_COLOR_RE,
 )
+from app.email import send_test_email
 
 # Fallback env var — only used if the admin_users table is empty or an
 # operator needs to recover access. Normally auth hits the DB.
@@ -551,13 +552,19 @@ def admin_member_create(
     request: Request,
     db: Session = Depends(get_db),
     name: str = Form(""),
+    email: str = Form(""),
     role: str = Form(""),
     display_order: int = Form(0),
 ):
     name = name.strip()
     if not name:
         return Response(status_code=400, content="name required")
-    member = Member(name=name, role=role.strip(), display_order=display_order)
+    member = Member(
+        name=name,
+        email=email.strip().lower() or None,
+        role=role.strip(),
+        display_order=display_order,
+    )
     db.add(member)
     db.commit()
     db.refresh(member)
@@ -574,6 +581,7 @@ def admin_member_update(
     request: Request,
     db: Session = Depends(get_db),
     name: str = Form(""),
+    email: str = Form(""),
     role: str = Form(""),
     display_order: int = Form(0),
 ):
@@ -584,6 +592,7 @@ def admin_member_update(
     if not name:
         return Response(status_code=400, content="name required")
     member.name = name
+    member.email = email.strip().lower() or None
     member.role = role.strip()
     member.display_order = display_order
     db.commit()
@@ -601,6 +610,60 @@ def admin_member_delete(member_id: int, db: Session = Depends(get_db)):
         db.delete(member)
         db.commit()
     return Response(status_code=200, content="")
+
+
+# ---------- Auth settings ----------
+
+@router.post("/auth-settings")
+def admin_auth_settings(
+    request: Request,
+    db: Session = Depends(get_db),
+    auth_enabled: str = Form(""),
+    email_api_key: str = Form(""),
+    email_from_address: str = Form(""),
+    email_from_name: str = Form(""),
+):
+    settings = get_or_create_settings(db)
+    settings.auth_enabled = auth_enabled == "1"
+    settings.email_api_key = email_api_key.strip()
+    settings.email_from_address = email_from_address.strip() or "onboarding@resend.dev"
+    settings.email_from_name = email_from_name.strip()
+
+    if settings.auth_enabled:
+        members_without_email = db.query(Member).filter(
+            (Member.email == None) | (Member.email == "")
+        ).count()
+        if members_without_email > 0:
+            db.commit()
+            return Response(
+                content=f"<span class='text-pollos-yellow'>⚠ saved, but {members_without_email} member(s) have no email — they won't be able to sign in.</span>",
+                media_type="text/html",
+            )
+
+    db.commit()
+    return Response(
+        content="<span class='text-emerald-400'>✓ saved</span>",
+        media_type="text/html",
+    )
+
+
+@router.post("/auth-settings/test-email")
+def admin_test_email(
+    request: Request,
+    db: Session = Depends(get_db),
+    test_to: str = Form(""),
+):
+    settings = get_or_create_settings(db)
+    err = send_test_email(settings, to_email=test_to.strip())
+    if err:
+        return Response(
+            content=f"<span class='text-red-400'>{err}</span>",
+            media_type="text/html",
+        )
+    return Response(
+        content=f"<span class='text-emerald-400'>✓ sent to {test_to}</span>",
+        media_type="text/html",
+    )
 
 
 # ---------- Agenda items ----------

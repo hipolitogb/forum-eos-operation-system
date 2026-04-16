@@ -149,6 +149,7 @@
       <thead>
         <tr class="text-[0.6rem] uppercase tracking-widest text-gray-500 border-b border-dark-700">
           <th class="py-2 px-3 font-semibold">Name</th>
+          <th class="py-2 px-3 font-semibold">Email</th>
           <th class="py-2 px-3 font-semibold">Role</th>
           <th class="py-2 px-3 font-semibold">Order</th>
           <th class="py-2 px-3"></th>
@@ -294,6 +295,52 @@
           {% for item in reflection_areas %}{% include "partials/admin_area_row.html" %}{% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Member authentication -->
+  <div class="bg-dark-800 border border-dark-700 rounded-xl p-5 mb-6">
+    <h2 class="text-lg font-bold mb-2">Member authentication</h2>
+    <p class="text-sm text-gray-400 mb-4">Lock the dashboard so only members with a valid email can access it. Uses <a href="https://resend.com" target="_blank" class="text-brand-primary hover:underline">Resend</a> to send magic-link emails (free tier: 3000/month).</p>
+
+    <form hx-post="/admin/auth-settings" hx-target="#auth-settings-result" hx-swap="innerHTML" class="space-y-4">
+      <div class="flex items-center gap-3">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="auth_enabled" value="1" {% if settings.auth_enabled %}checked{% endif %} class="sr-only peer">
+          <div class="w-9 h-5 bg-dark-600 peer-checked:bg-brand-primary rounded-full transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+        </label>
+        <span class="text-sm font-semibold">Require login for members</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">Resend API key</label>
+          <input type="password" name="email_api_key" value="{{ settings.email_api_key }}" placeholder="re_xxxxxxxxxxxx"
+            class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2 font-mono">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase mb-1">From address</label>
+          <input type="email" name="email_from_address" value="{{ settings.email_from_address }}" placeholder="forum@yourdomain.com"
+            class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 uppercase mb-1">From name <span class="text-gray-600 normal-case">(defaults to forum name)</span></label>
+        <input type="text" name="email_from_name" value="{{ settings.email_from_name }}" placeholder="{{ settings.forum_name }}"
+          class="w-full text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2">
+      </div>
+      <div class="flex items-center gap-3 pt-1">
+        <button type="submit" class="px-4 py-2 bg-brand-primary text-gray-900 rounded-md text-sm font-semibold">Save</button>
+        <div id="auth-settings-result" class="text-xs"></div>
+      </div>
+    </form>
+
+    <div class="mt-4 pt-4 border-t border-dark-700/40">
+      <form hx-post="/admin/auth-settings/test-email" hx-target="#test-email-result" hx-swap="innerHTML" class="flex items-center gap-3">
+        <input type="email" name="test_to" placeholder="your@email.com" required class="text-sm bg-dark-900 border border-dark-700 rounded-md px-3 py-2 flex-1">
+        <button type="submit" class="btn-xs btn-xs-primary">Send test email</button>
+        <div id="test-email-result" class="text-xs"></div>
+      </form>
     </div>
   </div>
 

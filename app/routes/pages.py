@@ -4,7 +4,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Member, ParkingItem
+from fastapi.responses import RedirectResponse
 from app.branding import branding_context, forum_content_context
+from app.routes.login import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -28,6 +30,10 @@ def _group_items_by_member_order(items, members):
 
 @router.get("/")
 def index(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+
     members = db.query(Member).order_by(Member.display_order).all()
     items = db.query(ParkingItem).order_by(ParkingItem.display_order).all()
     groups = _group_items_by_member_order(items, members)
@@ -49,4 +55,5 @@ def index(request: Request, db: Session = Depends(get_db)):
         "tag_labels": tag_labels,
         "all_tags": list(tag_labels.keys()),
         "member_names": [m.name for m in members] + ["Group"],
+        "current_user_email": user if user != "*" else None,
     })

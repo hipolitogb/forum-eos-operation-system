@@ -1,80 +1,129 @@
-# Forum Operating System
+# Forum OS
 
-Lightweight operations dashboard for EO Forums (and any small peer-advisory group running EO-style meetings). Designed to live at a single URL that all forum members can open, with an admin area for the moderator.
+Operations dashboard for EO forums and peer-advisory groups. Members-only parking lot, meeting agenda, constitution, and 5% reflections — all editable from the admin panel, fully branded, runs as a single Docker stack.
 
-## What it does
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https://github.com/hipolitogb/forum-eos-operation-system)
 
-- **Parking Lot** — a living log of open threads, grouped per member. Drag-to-reorder, tag by type (Open, Deep Dive, Topical, Recurring, Improving), schedule Deep Dive dates.
-- **Members** — the active forum roster, with optional roles (Chair, Moderator, etc.).
-- **Agenda** — a standard retreat/meeting timeline for reference during sessions.
-- **Constitution** — the forum's rules at a glance.
-- **5% Reflections** — prompt and structure for the classic four-areas check-in.
-- **Admin** — password-protected. Inline member CRUD, CSV backup/restore for members and parking items.
+---
 
-## Stack
+## Launch your forum in 5 minutes
 
-- FastAPI + SQLAlchemy + Alembic
-- Postgres 16
-- htmx + Tailwind (CDN) + SortableJS
-- Docker Compose
+No coding required. You'll need a GitHub account and a credit card for Railway ($5/month after free trial).
 
-## Quick install (one command)
+### Step 1 — Deploy to Railway
 
-On any server with Docker + Docker Compose:
+Click the **Deploy on Railway** button above. Sign in with GitHub when prompted. Railway creates your project and starts building — takes about 2 minutes.
+
+### Step 2 — Add a database
+
+In your Railway project dashboard, click **+ Add Service → Database → PostgreSQL**. Railway auto-links it to your app. Wait for the app to redeploy (~1 min).
+
+### Step 3 — Connect DATABASE_URL
+
+After adding Postgres, Railway creates a `DATABASE_URL` variable automatically in the Postgres service. You need to share it with the app:
+
+1. Click on your **app service** (the one that's NOT Postgres)
+2. Go to the **Variables** tab
+3. Click **+ New Variable** → Name: `DATABASE_URL` → Value: click **Insert Reference** → select `DATABASE_URL` from the Postgres service
+4. The app redeploys automatically
+
+### Step 4 — Open your forum
+
+Railway gives you a public URL (e.g. `forum-os-production.up.railway.app`). Click it.
+
+- **Dashboard**: your forum URL
+- **Admin panel**: your forum URL + `/admin`
+- **Default login**: username `admin`, password `admin`
+
+A red banner warns you to change the default password immediately.
+
+### Step 5 — Set up your forum
+
+In `/admin`:
+
+1. **Change admin password** — top of the page, enter current (`admin`) + new credentials
+2. **Brand it** — upload your logo, set name, tagline, pick colors and fonts
+3. **Add members** — name, email, role (Chair, Moderator, etc.)
+4. **Edit content** — agenda, constitution pillars & rules, 5% reflections
+
+All changes save instantly — no deploy or restart needed.
+
+### Step 6 — Enable member login (recommended)
+
+By default the forum is open (anyone with the URL can see it). To lock it down:
+
+**Get a Resend API key** (free — 3000 emails/month):
+1. Go to [resend.com](https://resend.com) and create an account
+2. In the Resend dashboard → API Keys → Create API Key → copy it
+
+**Configure in your forum:**
+1. In `/admin`, scroll to **Member authentication**
+2. Paste the Resend API key
+3. Set "From address" (use `onboarding@resend.dev` for testing, or verify your domain in Resend for a custom address)
+4. Click **Send test email** to verify it works
+5. Toggle **Require login for members** → Save
+
+Now members sign in by entering their email and clicking the magic link they receive.
+
+### Step 7 — Custom domain (optional)
+
+In Railway: **Settings → Networking → Custom Domain** → enter your domain → follow the DNS instructions. Railway provides automatic HTTPS.
+
+---
+
+## Self-host on your own server
+
+If you prefer a VPS (Hetzner, DigitalOcean, etc.) with Docker installed:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/hipolitogb/forum-eos-operation-system/main/install.sh | bash
 ```
 
-This pulls the pre-built image from GHCR, generates strong random passwords for you, and starts the stack. When it finishes, it prints your dashboard URL and admin credentials.
+This pulls the pre-built image from GHCR, generates random passwords, starts the stack, and prints the URL + admin credentials. See `install.sh --help` for tunables (`INSTALL_DIR`, `APP_PORT`).
 
-Tunables (set before running):
+Put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` to serve over HTTPS.
 
-```bash
-INSTALL_DIR=/srv/forum APP_PORT=8080 bash install.sh
-```
+---
 
-After install, put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` to serve over HTTPS.
+## What's editable from /admin
 
-## Local dev (from source)
+| Section | What you can change |
+|---------|-------------------|
+| Brand identity | Forum name, tagline, logo, 3 colors, display + body fonts |
+| Admin credentials | Username + bcrypt-hashed password |
+| Members | Name, email, role, display order |
+| Agenda | Meeting timeline items (time, title, duration, description) |
+| Constitution · Pillars | Core principles cards |
+| Constitution · Rules | Rules table (topic + rule) |
+| 5% Reflections | Intro text, life-area cards (emoji, label, color), closing note |
+| Member authentication | Toggle login requirement, Resend API key, from address |
+| Backup / Restore | Download/upload members + parking lot as CSV |
 
-If you want to hack on the code:
+---
 
-```bash
-git clone https://github.com/hipolitogb/forum-eos-operation-system.git
-cd forum-eos-operation-system
-cp .env.example .env
-# edit .env — at minimum set ADMIN_PASSWORD
-docker compose up -d --build
-```
+## Stack
 
-Open `http://localhost:8000` for the dashboard, `http://localhost:8000/admin` for the admin (HTTP Basic Auth — any username + `ADMIN_PASSWORD` from `.env`).
+- **Backend**: FastAPI + SQLAlchemy + Alembic
+- **Database**: PostgreSQL 16
+- **Frontend**: htmx + Tailwind CSS (CDN) + SortableJS
+- **Auth**: bcrypt (admin) + HMAC-SHA256 signed cookies (members) + Resend magic links
+- **Deploy**: Docker image on GHCR (multi-arch amd64 + arm64)
 
-## Where data lives
-
-- `backups/` — CSV snapshots (every manual backup + every pre-restore auto-backup).
-- `uploads/` — user-uploaded logos (only in the installed stack; in dev they live in `app/static/uploads/`).
-- Postgres data — in the named volume `forum_db_data` (survives `docker compose down`; persists until you `docker volume rm`).
+---
 
 ## Environment variables
 
-See [`.env.example`](.env.example). Required for production:
+All optional — the app runs with sensible defaults. Configure via Railway's Variables tab, or in `.env` for self-hosted.
 
-| Var | Purpose |
-|-----|---------|
-| `ADMIN_PASSWORD` | Password for `/admin`. Anything — username ignored. |
-| `POSTGRES_PASSWORD` | Postgres password. Must match `DATABASE_URL`. |
-| `DATABASE_URL` | SQLAlchemy URL. Default wires to the `db` service. |
-| `APP_PORT` | Host port exposed by Docker. Default `8000`. |
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://forum:forum@db:5432/forum` |
+| `APP_PORT` | Host port (self-hosted only) | `8000` |
+| `ADMIN_PASSWORD` | Fallback admin password (env overrides DB) | — |
+| `EMAIL_API_KEY` | Resend API key (env overrides DB) | — |
 
-## Roadmap
-
-- [x] Editable branding from `/admin` (forum name, tagline, logo, fonts, colors)
-- [x] `install.sh` one-liner bootstrap
-- [x] Published Docker image on GHCR (multi-arch, amd64 + arm64)
-- [ ] i18n (currently English only)
-- [ ] Per-member onboarding questionnaire
+---
 
 ## License
 
-MIT
+MIT — free to use, modify, and distribute.

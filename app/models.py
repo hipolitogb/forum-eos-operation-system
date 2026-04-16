@@ -7,6 +7,7 @@ class Member(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
+    email = Column(String(200), nullable=True, unique=True)
     role = Column(String(100), nullable=False, default="")
     display_order = Column(Integer, default=0)
     created_at = Column(DateTime, server_default=func.now())
@@ -40,6 +41,11 @@ class ForumSettings(Base):
     logo_path = Column(String(300), nullable=False, default="")
     reflections_intro = Column(Text, nullable=False, default="")
     reflections_footer = Column(Text, nullable=False, default="")
+    auth_enabled = Column(Integer, nullable=False, default=0)
+    email_api_key = Column(String(500), nullable=False, default="")
+    email_from_address = Column(String(200), nullable=False, default="onboarding@resend.dev")
+    email_from_name = Column(String(100), nullable=False, default="")
+    session_secret = Column(String(100), nullable=False, default="")
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
@@ -80,6 +86,18 @@ class ReflectionArea(Base):
     label = Column(String(100), nullable=False, default="")
     color_class = Column(String(50), nullable=False, default="text-brand-primary")
     display_order = Column(Integer, nullable=False, default=0)
+
+
+class LoginToken(Base):
+    __tablename__ = "login_tokens"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(200), nullable=False, index=True)
+    token_hash = Column(String(100), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    requester_ip = Column(String(50), nullable=False, default="")
 
 
 class AdminUser(Base):

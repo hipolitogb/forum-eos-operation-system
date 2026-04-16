@@ -5,6 +5,10 @@
       class="w-full bg-dark-900 border border-dark-700 rounded-md px-2 py-1 text-sm">
   </td>
   <td class="py-2 px-3">
+    <input type="email" name="email" value="{{ member.email or '' }}" placeholder="email@example.com"
+      class="w-full bg-dark-900 border border-dark-700 rounded-md px-2 py-1 text-sm">
+  </td>
+  <td class="py-2 px-3">
     <input type="text" name="role" value="{{ member.role }}" placeholder="Role"
       class="w-full bg-dark-900 border border-dark-700 rounded-md px-2 py-1 text-sm">
   </td>
@@ -30,6 +34,10 @@
 <tr id="admin-member-new" class="border-b border-dark-700/60 bg-brand-primary/5">
   <td class="py-2 px-3">
     <input type="text" name="name" value="" required placeholder="Name"
+      class="w-full bg-dark-900 border border-dark-700 rounded-md px-2 py-1 text-sm">
+  </td>
+  <td class="py-2 px-3">
+    <input type="email" name="email" value="" placeholder="email@example.com"
       class="w-full bg-dark-900 border border-dark-700 rounded-md px-2 py-1 text-sm">
   </td>
   <td class="py-2 px-3">
