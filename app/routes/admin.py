@@ -10,7 +10,6 @@ from pathlib import Path
 import bcrypt
 from fastapi import APIRouter, Request, Depends, UploadFile, File, Form, Response, HTTPException, status
 from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -33,12 +32,11 @@ from app.branding import (
     BODY_FONTS,
     VALID_COLOR_RE,
 )
-from app.email import send_test_email
+from app.email import send_test_email, send_magic_link
+from app.auth import sign_session, verify_session, _get_or_generate_secret, create_login_token, consume_login_token
 
-# Fallback env var — only used if the admin_users table is empty or an
-# operator needs to recover access. Normally auth hits the DB.
 ADMIN_PASSWORD_ENV = os.getenv("ADMIN_PASSWORD", "")
-security = HTTPBasic()
+ADMIN_COOKIE = "admin_session"
 
 
 def _check_password(user: AdminUser, password: str) -> bool:
@@ -48,27 +46,146 @@ def _check_password(user: AdminUser, password: str) -> bool:
         return False
 
 
-def require_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    # Use a short-lived session so the dependency is simple and doesn't
-    # interact with the request-scoped DB dependency (avoids ordering issues
-    # when this dep is declared at the router level).
-    db = SessionLocal()
-    try:
-        user = db.query(AdminUser).filter_by(username=credentials.username).one_or_none()
-        if user and _check_password(user, credentials.password):
-            return credentials.username
-        # Env-var escape hatch. Accepts any username.
-        if ADMIN_PASSWORD_ENV and secrets.compare_digest(credentials.password, ADMIN_PASSWORD_ENV):
-            return credentials.username
-    finally:
-        db.close()
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid credentials",
-        headers={"WWW-Authenticate": "Basic"},
+def require_admin(request: Request):
+    """Check admin session cookie. Redirects to /admin/login if invalid."""
+    cookie = request.cookies.get(ADMIN_COOKIE)
+    if cookie:
+        db = SessionLocal()
+        try:
+            secret = _get_or_generate_secret(db)
+            username = verify_session(cookie, secret)
+            if username:
+                user = db.query(AdminUser).filter_by(username=username).one_or_none()
+                if user:
+                    return username
+        finally:
+            db.close()
+    raise HTTPException(status_code=303, headers={"Location": "/admin/login"})
+
+
+# Public admin routes (no auth required).
+auth_router = APIRouter()
+
+
+@auth_router.get("/login")
+def admin_login_page(request: Request, db: Session = Depends(get_db), error: str = ""):
+    from urllib.parse import unquote
+    return templates.TemplateResponse("admin_login.html", {
+        "request": request,
+        **branding_context(db),
+        "error": unquote(error) if error else "",
+    })
+
+
+@auth_router.post("/login")
+def admin_login_submit(
+    request: Request,
+    db: Session = Depends(get_db),
+    username: str = Form(""),
+    password: str = Form(""),
+):
+    from urllib.parse import quote
+    username = (username or "").strip()
+    password = (password or "").strip()
+
+    user = db.query(AdminUser).filter_by(username=username).one_or_none()
+    ok = user and _check_password(user, password)
+
+    if not ok and ADMIN_PASSWORD_ENV and secrets.compare_digest(password, ADMIN_PASSWORD_ENV):
+        ok = True
+
+    if not ok:
+        return RedirectResponse(f"/admin/login?error={quote('Invalid username or password.')}", status_code=303)
+
+    secret = _get_or_generate_secret(db)
+    cookie_val = sign_session(username, secret)
+    response = RedirectResponse("/admin", status_code=303)
+    response.set_cookie(
+        ADMIN_COOKIE, cookie_val,
+        max_age=30 * 86400, httponly=True, samesite="lax",
+        secure=request.url.scheme == "https",
     )
+    return response
 
 
+@auth_router.get("/logout")
+def admin_logout():
+    response = RedirectResponse("/admin/login", status_code=303)
+    response.delete_cookie(ADMIN_COOKIE)
+    return response
+
+
+@auth_router.get("/forgot")
+def admin_forgot_page(request: Request, db: Session = Depends(get_db), msg: str = ""):
+    from urllib.parse import unquote
+    return templates.TemplateResponse("admin_forgot.html", {
+        "request": request,
+        **branding_context(db),
+        "msg": unquote(msg) if msg else "",
+    })
+
+
+@auth_router.post("/forgot")
+def admin_forgot_submit(request: Request, db: Session = Depends(get_db)):
+    from urllib.parse import quote
+    admin_user = db.query(AdminUser).filter_by(id=1).one_or_none()
+    settings = get_or_create_settings(db)
+
+    if not admin_user or not admin_user.email:
+        return RedirectResponse(f"/admin/forgot?msg={quote('No admin email configured. Set ADMIN_PASSWORD in your .env file to recover access.')}", status_code=303)
+
+    if not settings.email_api_key and not os.getenv("EMAIL_API_KEY"):
+        return RedirectResponse(f"/admin/forgot?msg={quote('Email not configured. Set ADMIN_PASSWORD in your .env file to recover access.')}", status_code=303)
+
+    token = create_login_token(db, admin_user.email, requester_ip=request.client.host if request.client else "")
+    base_url = str(request.base_url).rstrip("/")
+    link = f"{base_url}/admin/reset?token={token}"
+
+    err = send_magic_link(settings, to_email=admin_user.email, link=link)
+    if err:
+        return RedirectResponse(f"/admin/forgot?msg={quote(f'Could not send email: {err}')}", status_code=303)
+
+    return RedirectResponse(f"/admin/forgot?msg={quote(f'Reset link sent to {admin_user.email}. Check your inbox.')}", status_code=303)
+
+
+@auth_router.get("/reset")
+def admin_reset_page(request: Request, db: Session = Depends(get_db), token: str = "", error: str = ""):
+    from urllib.parse import unquote
+    return templates.TemplateResponse("admin_reset.html", {
+        "request": request,
+        **branding_context(db),
+        "token": token,
+        "error": unquote(error) if error else "",
+    })
+
+
+@auth_router.post("/reset")
+def admin_reset_submit(
+    request: Request,
+    db: Session = Depends(get_db),
+    token: str = Form(""),
+    new_password: str = Form(""),
+    confirm_password: str = Form(""),
+):
+    from urllib.parse import quote
+    email = consume_login_token(db, token)
+    if not email:
+        return RedirectResponse(f"/admin/reset?error={quote('Link expired or invalid. Request a new one.')}", status_code=303)
+
+    if not new_password or len(new_password) < 6 or new_password != confirm_password:
+        return RedirectResponse(f"/admin/reset?token={token}&error={quote('Password must be at least 6 characters and both fields must match.')}", status_code=303)
+
+    admin_user = db.query(AdminUser).filter_by(email=email.lower().strip()).one_or_none()
+    if not admin_user:
+        return RedirectResponse(f"/admin/login?error={quote('No admin account found for that email.')}", status_code=303)
+
+    admin_user.password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    db.commit()
+
+    return RedirectResponse(f"/admin/login?error={quote('Password updated. Sign in with your new password.')}", status_code=303)
+
+
+# Protected admin routes (require session cookie).
 router = APIRouter(dependencies=[Depends(require_admin)])
 templates = Jinja2Templates(directory="app/templates")
 

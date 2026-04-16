@@ -104,10 +104,9 @@ class LoginToken(Base):
 class AdminUser(Base):
     __tablename__ = "admin_users"
 
-    # Singleton (id=1) for now — one admin login. Designed to allow a second
-    # row later without migrations.
     id = Column(Integer, primary_key=True)
     username = Column(String(100), nullable=False, unique=True)
     password_hash = Column(String(200), nullable=False)
+    email = Column(String(200), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

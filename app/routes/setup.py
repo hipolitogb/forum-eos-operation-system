@@ -126,14 +126,17 @@ def setup_save_3(
     new_username: str = Form(""),
     new_password: str = Form(""),
     confirm_password: str = Form(""),
+    admin_email: str = Form(""),
 ):
     new_username = (new_username or "").strip()
     new_password = (new_password or "").strip()
+    admin_email = (admin_email or "").strip().lower()
     if new_username and new_password and len(new_password) >= 6 and new_password == confirm_password:
         user = db.query(AdminUser).filter_by(id=1).one_or_none()
         if user:
             user.username = new_username
             user.password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+            user.email = admin_email or None
             db.commit()
     return RedirectResponse("/setup/4", status_code=303)
 
