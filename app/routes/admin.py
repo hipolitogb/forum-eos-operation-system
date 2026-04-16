@@ -9,7 +9,7 @@ from pathlib import Path
 
 import bcrypt
 from fastapi import APIRouter, Request, Depends, UploadFile, File, Form, Response, HTTPException, status
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
@@ -112,6 +112,9 @@ def _persist_backup(db: Session, label: str) -> Path:
 
 @router.get("")
 def admin_page(request: Request, db: Session = Depends(get_db), _user: str = Depends(require_admin)):
+    settings = get_or_create_settings(db)
+    if not settings.setup_completed:
+        return RedirectResponse("/admin/setup/1", status_code=303)
     backups = []
     if BACKUP_DIR.exists():
         backups = sorted([p.name for p in BACKUP_DIR.iterdir() if p.is_dir()], reverse=True)[:20]

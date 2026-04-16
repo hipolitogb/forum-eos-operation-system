@@ -46,6 +46,7 @@ class ForumSettings(Base):
     email_from_address = Column(String(200), nullable=False, default="onboarding@resend.dev")
     email_from_name = Column(String(100), nullable=False, default="")
     session_secret = Column(String(100), nullable=False, default="")
+    setup_completed = Column(Integer, nullable=False, default=0)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
