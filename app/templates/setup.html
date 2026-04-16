@@ -15,7 +15,7 @@
   <h2 class="font-display text-2xl text-brand-primary mb-2">Your forum</h2>
   <p class="text-sm text-gray-400 mb-6">Give your forum a name. You can change everything later in the admin panel.</p>
 
-  <form method="post" action="/admin/setup/1" enctype="multipart/form-data" class="space-y-5">
+  <form method="post" action="/setup/1" enctype="multipart/form-data" class="space-y-5">
     <div>
       <label class="block text-xs text-gray-500 uppercase mb-1">Forum name</label>
       <input type="text" name="forum_name" value="{{ settings.forum_name }}" required autofocus
@@ -32,7 +32,7 @@
         class="w-full text-sm bg-dark-800 border border-dark-700 rounded-lg px-4 py-3">
     </div>
     <div class="flex justify-between items-center pt-4">
-      <a href="/admin/setup/2" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
+      <a href="/setup/2" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
       <button type="submit" class="px-6 py-3 bg-brand-primary text-gray-900 rounded-lg text-sm font-bold hover:brightness-110 transition">Next</button>
     </div>
   </form>
@@ -42,7 +42,7 @@
   <h2 class="font-display text-2xl text-brand-primary mb-2">Look & feel</h2>
   <p class="text-sm text-gray-400 mb-6">Pick colors and fonts that match your group's identity.</p>
 
-  <form method="post" action="/admin/setup/2" class="space-y-5">
+  <form method="post" action="/setup/2" class="space-y-5">
     <div class="grid grid-cols-3 gap-3">
       <div>
         <label class="block text-xs text-gray-500 uppercase mb-1">Primary</label>
@@ -72,7 +72,7 @@
       </div>
     </div>
     <div class="flex justify-between items-center pt-4">
-      <a href="/admin/setup/3" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
+      <a href="/setup/3" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
       <button type="submit" class="px-6 py-3 bg-brand-primary text-gray-900 rounded-lg text-sm font-bold hover:brightness-110 transition">Next</button>
     </div>
   </form>
@@ -87,7 +87,7 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/admin/setup/3" class="space-y-5">
+  <form method="post" action="/setup/3" class="space-y-5">
     <div>
       <label class="block text-xs text-gray-500 uppercase mb-1">New username</label>
       <input type="text" name="new_username" value="{{ admin_user.username if admin_user else 'admin' }}" required autofocus
@@ -104,7 +104,7 @@
         class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 text-sm focus:border-brand-primary focus:outline-none">
     </div>
     <div class="flex justify-between items-center pt-4">
-      <a href="/admin/setup/4" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
+      <a href="/setup/4" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
       <button type="submit" class="px-6 py-3 bg-brand-primary text-gray-900 rounded-lg text-sm font-bold hover:brightness-110 transition">Next</button>
     </div>
   </form>
@@ -123,7 +123,7 @@
         {% if m.email %}<span class="text-xs text-gray-500 font-mono truncate">{{ m.email }}</span>{% endif %}
         {% if m.role %}<span class="text-[0.55rem] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-brand-primary/10 text-brand-primary">{{ m.role }}</span>{% endif %}
       </div>
-      <form method="post" action="/admin/setup/4/delete/{{ m.id }}" class="flex-shrink-0">
+      <form method="post" action="/setup/4/delete/{{ m.id }}" class="flex-shrink-0">
         <button type="submit" class="text-xs text-gray-500 hover:text-red-400 transition-colors" onclick="return confirm('Remove {{ m.name }}?')">✕</button>
       </form>
     </div>
@@ -131,7 +131,7 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/admin/setup/4" class="bg-dark-800 border border-dark-700 rounded-lg p-4 space-y-3">
+  <form method="post" action="/setup/4" class="bg-dark-800 border border-dark-700 rounded-lg p-4 space-y-3">
     <div class="grid grid-cols-2 gap-3">
       <input type="text" name="name" required placeholder="Name" autofocus
         class="bg-dark-900 border border-dark-700 rounded-md px-3 py-2.5 text-sm focus:border-brand-primary focus:outline-none">
@@ -146,8 +146,8 @@
   </form>
 
   <div class="flex justify-between items-center pt-6">
-    <a href="/admin/setup/5" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
-    <a href="/admin/setup/5" class="px-6 py-3 bg-brand-primary text-gray-900 rounded-lg text-sm font-bold hover:brightness-110 transition inline-block">Next</a>
+    <a href="/setup/5" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Skip →</a>
+    <a href="/setup/5" class="px-6 py-3 bg-brand-primary text-gray-900 rounded-lg text-sm font-bold hover:brightness-110 transition inline-block">Next</a>
   </div>
 
   <!-- ========== STEP 5: Email & auth ========== -->
@@ -155,7 +155,7 @@
   <h2 class="font-display text-2xl text-brand-primary mb-2">Email & member login</h2>
   <p class="text-sm text-gray-400 mb-6">Lock your forum so only members can view it. You need a <a href="https://resend.com" target="_blank" class="text-brand-primary hover:underline">Resend</a> API key (free tier: 3000 emails/month). You can skip and set this up later.</p>
 
-  <form method="post" action="/admin/setup/5" class="space-y-5">
+  <form method="post" action="/setup/5" class="space-y-5">
     <div>
       <label class="block text-xs text-gray-500 uppercase mb-1">Resend API key <span class="text-gray-600 normal-case">(optional)</span></label>
       <input type="password" name="email_api_key" value="{{ settings.email_api_key }}" placeholder="re_xxxxxxxxxxxx"
@@ -181,7 +181,7 @@
       <span class="text-sm">Require login for members</span>
     </div>
     <div class="flex justify-between items-center pt-4">
-      <form method="post" action="/admin/setup/5" style="display:inline">
+      <form method="post" action="/setup/5" style="display:inline">
         <input type="hidden" name="email_api_key" value="">
         <input type="hidden" name="email_from_address" value="onboarding@resend.dev">
         <input type="hidden" name="email_from_name" value="">

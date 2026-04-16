@@ -33,7 +33,7 @@ def index(request: Request, db: Session = Depends(get_db)):
     from app.branding import get_or_create_settings
     settings = get_or_create_settings(db)
     if not settings.setup_completed:
-        return RedirectResponse("/admin/setup/1", status_code=303)
+        return RedirectResponse("/setup/1", status_code=303)
 
     user = get_current_user(request, db)
     if user is None:

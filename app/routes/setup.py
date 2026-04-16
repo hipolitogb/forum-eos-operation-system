@@ -1,4 +1,4 @@
-"""First-run setup wizard. Lives under /admin/setup/* so it inherits
+"""First-run setup wizard. Lives under /setup/* so it inherits
 the admin router's Basic Auth dependency."""
 import re
 
@@ -11,9 +11,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Member, AdminUser
 from app.branding import branding_context, get_or_create_settings, DISPLAY_FONTS, BODY_FONTS, VALID_COLOR_RE
-from app.routes.admin import require_admin
-
-router = APIRouter(dependencies=[Depends(require_admin)])
+router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 TOTAL_STEPS = 5
@@ -45,23 +43,26 @@ def _ctx(request, db, step, extra=None):
     return ctx
 
 
-@router.get("/setup")
-def setup_index():
-    return RedirectResponse("/admin/setup/1", status_code=303)
+@router.get("")
+def setup_index(db: Session = Depends(get_db)):
+    settings = get_or_create_settings(db)
+    if settings.setup_completed:
+        return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/setup/1", status_code=303)
 
 
-@router.get("/setup/{step}")
+@router.get("/{step}")
 def setup_step(step: int, request: Request, db: Session = Depends(get_db)):
     settings = get_or_create_settings(db)
     if settings.setup_completed:
-        return RedirectResponse("/admin", status_code=303)
+        return RedirectResponse("/", status_code=303)
     step = max(1, min(step, TOTAL_STEPS))
     return templates.TemplateResponse("setup.html", _ctx(request, db, step))
 
 
 # ---------- Step 1: Forum name + tagline + logo ----------
 
-@router.post("/setup/1")
+@router.post("/1")
 async def setup_save_1(
     request: Request,
     db: Session = Depends(get_db),
@@ -86,12 +87,12 @@ async def setup_save_1(
                 settings.logo_path = f"uploads/logo.{ext}"
 
     db.commit()
-    return RedirectResponse("/admin/setup/2", status_code=303)
+    return RedirectResponse("/setup/2", status_code=303)
 
 
 # ---------- Step 2: Colors + fonts ----------
 
-@router.post("/setup/2")
+@router.post("/2")
 def setup_save_2(
     request: Request,
     db: Session = Depends(get_db),
@@ -113,12 +114,12 @@ def setup_save_2(
     if re.match(VALID_COLOR_RE, color_tertiary or ""):
         settings.color_tertiary = color_tertiary.upper()
     db.commit()
-    return RedirectResponse("/admin/setup/3", status_code=303)
+    return RedirectResponse("/setup/3", status_code=303)
 
 
 # ---------- Step 3: Admin credentials ----------
 
-@router.post("/setup/3")
+@router.post("/3")
 def setup_save_3(
     request: Request,
     db: Session = Depends(get_db),
@@ -134,12 +135,12 @@ def setup_save_3(
             user.username = new_username
             user.password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
             db.commit()
-    return RedirectResponse("/admin/setup/4", status_code=303)
+    return RedirectResponse("/setup/4", status_code=303)
 
 
 # ---------- Step 4: Members ----------
 
-@router.post("/setup/4")
+@router.post("/4")
 def setup_add_member(
     request: Request,
     db: Session = Depends(get_db),
@@ -157,21 +158,21 @@ def setup_add_member(
             display_order=max_order + 1,
         ))
         db.commit()
-    return RedirectResponse("/admin/setup/4", status_code=303)
+    return RedirectResponse("/setup/4", status_code=303)
 
 
-@router.post("/setup/4/delete/{member_id}")
+@router.post("/4/delete/{member_id}")
 def setup_delete_member(member_id: int, db: Session = Depends(get_db)):
     m = db.query(Member).get(member_id)
     if m:
         db.delete(m)
         db.commit()
-    return RedirectResponse("/admin/setup/4", status_code=303)
+    return RedirectResponse("/setup/4", status_code=303)
 
 
 # ---------- Step 5: Email & auth ----------
 
-@router.post("/setup/5")
+@router.post("/5")
 def setup_save_5(
     request: Request,
     db: Session = Depends(get_db),
