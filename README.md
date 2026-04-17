@@ -2,25 +2,24 @@
 
 Operations dashboard for EO forums and peer-advisory groups. Members-only parking lot, meeting agenda, constitution, and 5% reflections — all editable, fully branded, runs as a single Docker stack.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https://github.com/hipolitogb/forum-eos-operation-system)
-
 ---
 
 ## Launch your forum in 5 minutes
 
-No coding required. You'll need a GitHub account and a credit card for Railway ($5/month after free trial).
+No coding required. You'll need a GitHub account and a credit card for [Railway](https://railway.com) ($5/month after free trial).
 
-### Step 1 — Deploy to Railway
+### Step 1 — Create a Railway project
 
-Click the **Deploy on Railway** button above. Sign in with GitHub when prompted. Railway creates your project and starts building — takes about 2 minutes.
+1. Go to [railway.com](https://railway.com) and sign in with GitHub
+2. Click **New Project → Deploy from GitHub repo**
+3. Select **hipolitogb/forum-eos-operation-system** (you may need to fork it first)
+4. Railway starts building — takes about 2 minutes
 
 ### Step 2 — Add a database
 
-In your Railway project dashboard, click **+ Add Service → Database → PostgreSQL**. Railway auto-links it to your app. Wait for the app to redeploy (~1 min).
+In your Railway project dashboard, click **+ Add Service → Database → PostgreSQL**.
 
-### Step 3 — Connect DATABASE_URL
-
-After adding Postgres, Railway creates a `DATABASE_URL` variable automatically in the Postgres service. You need to share it with the app:
+### Step 3 — Connect the database to the app
 
 1. Click on your **app service** (the one that's NOT Postgres)
 2. Go to the **Variables** tab
