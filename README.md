@@ -1,6 +1,6 @@
 # Forum OS
 
-Operations dashboard for EO forums and peer-advisory groups. Members-only parking lot, meeting agenda, constitution, and 5% reflections — all editable from the admin panel, fully branded, runs as a single Docker stack.
+Operations dashboard for EO forums and peer-advisory groups. Members-only parking lot, meeting agenda, constitution, and 5% reflections — all editable, fully branded, runs as a single Docker stack.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https://github.com/hipolitogb/forum-eos-operation-system)
 
@@ -27,45 +27,31 @@ After adding Postgres, Railway creates a `DATABASE_URL` variable automatically i
 3. Click **+ New Variable** → Name: `DATABASE_URL` → Value: click **Insert Reference** → select `DATABASE_URL` from the Postgres service
 4. The app redeploys automatically
 
-### Step 4 — Open your forum
+### Step 4 — Open your forum and follow the setup wizard
 
-Railway gives you a public URL (e.g. `forum-os-production.up.railway.app`). Click it.
+Railway gives you a public URL (e.g. `forum-os-production.up.railway.app`). Open it.
 
-- **Dashboard**: your forum URL
-- **Admin panel**: your forum URL + `/admin`
-- **Default login**: username `admin`, password `admin`
+The app detects it's a fresh install and starts a **5-step setup wizard**:
 
-A red banner warns you to change the default password immediately.
+1. **Your forum** — name, tagline, logo upload
+2. **Look & feel** — pick 3 colors and fonts
+3. **Secure your admin** — set username, password, and recovery email (replaces the default `admin / admin`)
+4. **Members** — add forum members with their email addresses
+5. **Email & auth** — paste your Resend API key and choose whether to require member login
 
-### Step 5 — Set up your forum
+Every step has a **Skip** button if you want to configure it later. When you finish, you land on your fully configured dashboard.
 
-In `/admin`:
+### Step 5 — Set up email login (if you skipped it in the wizard)
 
-1. **Change admin password** — top of the page, enter current (`admin`) + new credentials
-2. **Brand it** — upload your logo, set name, tagline, pick colors and fonts
-3. **Add members** — name, email, role (Chair, Moderator, etc.)
-4. **Edit content** — agenda, constitution pillars & rules, 5% reflections
+To lock your forum so only members can access it, you need a [Resend](https://resend.com) account (free — 3000 emails/month):
 
-All changes save instantly — no deploy or restart needed.
+1. Go to [resend.com](https://resend.com) → create an account → get an API key
+2. In your forum, go to `/admin` → sign in → scroll to **Member authentication**
+3. Paste the Resend API key, set a "From" address, and toggle **Require login for members**
 
-### Step 6 — Enable member login (recommended)
+Members sign in by entering their email and clicking the magic link they receive. Sessions last 30 days.
 
-By default the forum is open (anyone with the URL can see it). To lock it down:
-
-**Get a Resend API key** (free — 3000 emails/month):
-1. Go to [resend.com](https://resend.com) and create an account
-2. In the Resend dashboard → API Keys → Create API Key → copy it
-
-**Configure in your forum:**
-1. In `/admin`, scroll to **Member authentication**
-2. Paste the Resend API key
-3. Set "From address" (use `onboarding@resend.dev` for testing, or verify your domain in Resend for a custom address)
-4. Click **Send test email** to verify it works
-5. Toggle **Require login for members** → Save
-
-Now members sign in by entering their email and clicking the magic link they receive.
-
-### Step 7 — Custom domain (optional)
+### Step 6 — Custom domain (optional)
 
 In Railway: **Settings → Networking → Custom Domain** → enter your domain → follow the DNS instructions. Railway provides automatic HTTPS.
 
@@ -79,9 +65,19 @@ If you prefer a VPS (Hetzner, DigitalOcean, etc.) with Docker installed:
 curl -sSL https://raw.githubusercontent.com/hipolitogb/forum-eos-operation-system/main/install.sh | bash
 ```
 
-This pulls the pre-built image from GHCR, generates random passwords, starts the stack, and prints the URL + admin credentials. See `install.sh --help` for tunables (`INSTALL_DIR`, `APP_PORT`).
+This pulls the pre-built image from GHCR, generates random passwords, starts the stack, and prints the URL. Open the URL and the setup wizard starts automatically.
 
 Put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` to serve over HTTPS.
+
+Tunables: `INSTALL_DIR=/srv/forum APP_PORT=8080 bash install.sh`
+
+---
+
+## Admin panel
+
+After setup, the admin panel lives at `/admin`. It has a proper login form (not a browser popup) with username + password.
+
+**Forgot your password?** Click "Forgot password?" on the login page. If you configured a recovery email during setup, you'll receive a reset link. If not, set `ADMIN_PASSWORD=yourpass` in your `.env` file and restart — this env var works as a fallback login.
 
 ---
 
@@ -90,7 +86,7 @@ Put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` t
 | Section | What you can change |
 |---------|-------------------|
 | Brand identity | Forum name, tagline, logo, 3 colors, display + body fonts |
-| Admin credentials | Username + bcrypt-hashed password |
+| Admin credentials | Username, password (bcrypt-hashed), recovery email |
 | Members | Name, email, role, display order |
 | Agenda | Meeting timeline items (time, title, duration, description) |
 | Constitution · Pillars | Core principles cards |
@@ -106,7 +102,7 @@ Put a reverse proxy (Caddy / Cloudflare Tunnel / nginx) in front of `APP_PORT` t
 - **Backend**: FastAPI + SQLAlchemy + Alembic
 - **Database**: PostgreSQL 16
 - **Frontend**: htmx + Tailwind CSS (CDN) + SortableJS
-- **Auth**: bcrypt (admin) + HMAC-SHA256 signed cookies (members) + Resend magic links
+- **Auth**: bcrypt (admin) + HMAC-SHA256 signed cookies (members + admin sessions) + Resend magic links
 - **Deploy**: Docker image on GHCR (multi-arch amd64 + arm64)
 
 ---
