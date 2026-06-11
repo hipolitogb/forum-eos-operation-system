@@ -195,7 +195,7 @@ BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 VALID_TAGS = {"open", "deep-dive", "topical", "recurring", "improving"}
 
 MEMBER_HEADERS = ["id", "name", "role", "display_order"]
-PARKING_HEADERS = ["id", "person_name", "title", "tag", "deep_dive_date", "context", "display_order"]
+PARKING_HEADERS = ["id", "person_name", "title", "tag", "deep_dive_date", "context", "display_order", "closed"]
 
 
 def _export_members_csv(db: Session) -> str:
@@ -214,7 +214,7 @@ def _export_parking_csv(db: Session) -> str:
     w = csv.writer(buf)
     w.writerow(PARKING_HEADERS)
     for i in rows:
-        w.writerow([i.id, i.person_name, i.title, i.tag, i.deep_dive_date or "", i.context or "", i.display_order or 0])
+        w.writerow([i.id, i.person_name, i.title, i.tag, i.deep_dive_date or "", i.context or "", i.display_order or 0, 1 if i.closed else 0])
     return buf.getvalue()
 
 
@@ -480,6 +480,7 @@ def _validate_parking_csv(text_: str, member_names: set[str]) -> tuple[list[dict
             "deep_dive_date": (row.get("deep_dive_date") or "").strip(),
             "context": (row.get("context") or "").strip(),
             "display_order": order,
+            "closed": 1 if (row.get("closed") or "").strip() in ("1", "true", "True") else 0,
         })
     return rows, errors + [f"WARN: {w}" for w in warnings]
 
@@ -605,6 +606,7 @@ async def restore_apply(
                 deep_dive_date=p["deep_dive_date"],
                 context=p["context"],
                 display_order=p["display_order"],
+                closed=p["closed"],
             ))
     db.flush()
 

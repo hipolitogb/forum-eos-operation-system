@@ -22,6 +22,7 @@ class ParkingItem(Base):
     tag = Column(String(100), nullable=False, default="open")
     deep_dive_date = Column(String(50), nullable=False, default="")
     context = Column(Text, nullable=False, default="")
+    closed = Column(Integer, nullable=False, default=0)
     display_order = Column(Integer, default=0)
     created_at = Column(DateTime, server_default=func.now())
 

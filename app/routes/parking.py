@@ -87,6 +87,15 @@ def update_item(
     return templates.TemplateResponse("partials/parking_item.html", {**_ctx(request, db), "item": item})
 
 
+@router.put("/{item_id}/toggle-closed")
+def toggle_closed(item_id: int, request: Request, db: Session = Depends(get_db)):
+    item = db.query(ParkingItem).get(item_id)
+    item.closed = 0 if item.closed else 1
+    db.commit()
+    db.refresh(item)
+    return templates.TemplateResponse("partials/parking_item.html", {**_ctx(request, db), "item": item})
+
+
 @router.delete("/{item_id}")
 def delete_item(item_id: int, db: Session = Depends(get_db)):
     item = db.query(ParkingItem).get(item_id)
